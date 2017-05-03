@@ -12,6 +12,50 @@ void FlashChargeAna::analyze(art::Event const & e)
 }
 
 
+
+
+
+
+
+
+
+
+
+void collect3DHitsZ(    std::vector<flashana::Hit3D_t> &hitlist, 
+                        size_t pfindex, 
+                        const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
+                        const art::Event & evt)
+{
+  art::InputTag pandoraNu_tag { "pandoraNu" };
+  auto const& spacepoint_handle = evt.getValidHandle<std::vector<recob::SpacePoint>>(pandoraNu_tag);
+
+  art::FindManyP<recob::SpacePoint > spcpnts_per_pfpart ( pfparticles, evt, pandoraNu_tag );
+  art::FindManyP<recob::Hit > hits_per_spcpnts ( spacepoint_handle, evt, pandoraNu_tag );
+
+  std::vector<art::Ptr < recob::SpacePoint > > spcpnts = spcpnts_per_pfpart.at(pfindex);
+
+  // Loop over the spacepoints and get the associated hits:
+  for (auto & _sps : spcpnts) {
+    std::vector<art::Ptr<recob::Hit> > hits = hits_per_spcpnts.at(_sps.key());
+    // Add the hits to the weighted average, if they are collection hits:
+    for (auto & hit : hits) {
+      if (hit->View() == geo::kZ) {
+        // Collection hits only
+        auto xyz = _sps->XYZ();
+        flashana::Hit3D_t hit3D; //Collection plane hits
+        hit3D.x = xyz[0];
+        hit3D.y = xyz[1];
+        hit3D.z = xyz[2];
+        hit3D.plane =  2;
+        hit3D.q = hit->Integral();
+
+        hitlist.emplace_back(hit3D);
+      }
+    }
+  }
+}
+
+
 void FlashChargeAna::fillTree(art::Event const & e)
 {
   // Fill run information

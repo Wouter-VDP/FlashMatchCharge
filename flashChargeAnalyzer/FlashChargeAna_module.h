@@ -16,14 +16,16 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
+#include "art/Framework/Services/Optional/TFileService.h"
+
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Common/FindOneP.h"
+#include "canvas/Persistency/Common/FindManyP.h"
+
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "art/Framework/Services/Optional/TFileService.h"
-#include "SpaceChargeMicroBooNE.h"
 #include "larcore/Geometry/Geometry.h"
-
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Shower.h"
@@ -31,20 +33,21 @@
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/Hit.h"
-
-#include "canvas/Persistency/Common/FindOneP.h"
-#include "canvas/Persistency/Common/FindManyP.h"
-
+#include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 
-#include "lardataobj/AnalysisBase/Calorimetry.h"
+#include "SpaceChargeMicroBooNE.h"
+
+#include "uboonecode/uboone/LLSelectionTool/OpT0Finder/Base/OpT0FinderTypes.h"
 
 #include "TTree.h"
 #include "TVector3.h"
 
 #include <algorithm>
+
+
 
 namespace flashcharge {
   class FlashChargeAna;
@@ -82,6 +85,12 @@ private:
                         const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
                         size_t top_index,
                         std::vector<size_t> & unordered_daugthers );
+
+  void collect3DHitsZ(
+                        std::vector<flashana::Hit3D_t> &hitlist, 
+                        size_t pfindex, 
+                        const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
+                        const art::Event & evt);
 
   // variables
   SpaceChargeMicroBooNE SCE = SpaceChargeMicroBooNE("SCEoffsets_MicroBooNE_E273.root");
