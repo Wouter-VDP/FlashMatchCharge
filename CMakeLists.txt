@@ -1,5 +1,5 @@
 # ======================================================================
-#  mypandoraanalysis main build file
+#  pandoraElectronFilter main build file
 #
 #  cd .../path/to/build/directory
 #  source .../path/to/mypandoraanalysis/ups/setup_for_development <-d|-p>
@@ -16,7 +16,7 @@
 # use cmake 2.8 or later
 cmake_minimum_required (VERSION 2.8)
 
-project(mypandoraanalysis)
+project(pandoraElectronFilter)
 
 # cetbuildtools contains our cmake modules
 SET ( CETBUILDTOOLS_VERSION $ENV{CETBUILDTOOLS_VERSION} )
@@ -45,9 +45,13 @@ find_ups_product( larcore v1_00_00 )
 find_ups_product( lardata v1_00_00 )
 find_ups_product( larevt v1_00_00 )
 find_ups_product( larsim v1_00_00 )
+find_ups_product( larpandora v1_00_00 )
 find_ups_product( nutools v1_00_00 )
+find_ups_product( boost v1_00_00 )
 find_ups_product( art v1_09_00 )
+find_ups_product( uboonecode v1_00_00 )
 find_ups_product( cetbuildtools v4_09_00 )
+find_ups_product( gsl )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
@@ -55,11 +59,7 @@ include(ArtMake)
 include(BuildPlugins)
 
 # source
-add_subdirectory(PandoraAnalysis)
-add_subdirectory(PandoraAnalyzer)
-
-# tests
-add_subdirectory(test)
+add_subdirectory(flashChargeAnalyzer)
 
 # ups - table and config files
 add_subdirectory(ups)

@@ -1,0 +1,18 @@
+BEGIN_PROLOG
+
+flash_charge_ana:
+{
+    fidvolXstart:               10
+    fidvolXstart:               10
+    fidvolYstart:               20
+    fidvolYend:                 20
+    fidvolZstart:               10
+    fidvolZend:                 50
+    fractionsigmaflashwidth:    2.0
+    absoluteflashdist:          50.0
+
+    module_type:                "FlashChargeAna"
+    PrintDebug:                 false
+}
+
+END_PROLOG
