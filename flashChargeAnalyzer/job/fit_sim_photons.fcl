@@ -1,0 +1,10 @@
+
+BEGIN_PROLOG
+
+fit_sim_photons: 
+{
+	 DebugMode:                true
+
+}
+
+END_PROLOG

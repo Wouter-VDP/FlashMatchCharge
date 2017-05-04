@@ -43,7 +43,7 @@ art_make(
                         ${SIMULATIONBASE}
 
           MODULE_LIBRARIES
-                        FlashCharge
+          			SpaceCharge
                         larpandora_LArPandoraInterface
                         lardataobj_RecoBase
                         nusimdata_SimulationBase
@@ -80,6 +80,7 @@ art_make(
 )
 
 add_subdirectory(job)
+add_subdirectory(Spacecharge)
 
 install_headers()
 install_source()

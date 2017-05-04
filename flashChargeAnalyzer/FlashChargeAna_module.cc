@@ -12,16 +12,7 @@ void FlashChargeAna::analyze(art::Event const & e)
 }
 
 
-
-
-
-
-
-
-
-
-
-void collect3DHitsZ(    std::vector<flashana::Hit3D_t> &hitlist, 
+flashana::QCluster_t FlashChargeAna::collect3DHitsZ(    std::vector<flashana::Hit3D_t> &hitlist, 
                         size_t pfindex, 
                         const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
                         const art::Event & evt)
@@ -53,6 +44,9 @@ void collect3DHitsZ(    std::vector<flashana::Hit3D_t> &hitlist,
       }
     }
   }
+  //the conversion number is a pure guess! will this depend on x?
+  flashana::QCluster_t result; //= ((flashana::LightCharge*)(_mgr.GetCustomAlgo("LightCharge")))->FlashHypothesisCharge(hitlist, 10000);
+  return result;
 }
 
 

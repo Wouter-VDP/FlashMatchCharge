@@ -38,9 +38,11 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 
-#include "SpaceChargeMicroBooNE.h"
+#include "Spacecharge/SpaceChargeMicroBooNE.h"
 
-#include "uboonecode/uboone/LLSelectionTool/OpT0Finder/Base/OpT0FinderTypes.h"
+#include "uboone/LLSelectionTool/OpT0Finder/Base/OpT0FinderTypes.h"
+#include "uboone/LLSelectionTool/OpT0Finder/Algorithms/LightCharge.h"
+#include "uboone/LLSelectionTool/OpT0Finder/Base/FlashMatchManager.h"
 
 #include "TTree.h"
 #include "TVector3.h"
@@ -86,14 +88,16 @@ private:
                         size_t top_index,
                         std::vector<size_t> & unordered_daugthers );
 
-  void collect3DHitsZ(
-                        std::vector<flashana::Hit3D_t> &hitlist, 
+  flashana::QCluster_t collect3DHitsZ(       std::vector<flashana::Hit3D_t> &hitlist, 
                         size_t pfindex, 
                         const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
                         const art::Event & evt);
 
   // variables
   SpaceChargeMicroBooNE SCE = SpaceChargeMicroBooNE("SCEoffsets_MicroBooNE_E273.root");
+
+  //::flashana::FlashMatchManager  _mgr;
+
   TTree*      fTree;
   
 
@@ -198,6 +202,9 @@ flashcharge::FlashChargeAna::FlashChargeAna(fhicl::ParameterSet const & pset)
   EDAnalyzer(pset)  // ,
  // More initializers here.
 {
+
+  //_mgr.Configure(pset.get<flashana::Config_t>("FlashMatchConfig"));
+
   //initialize output tree
   std::cout << "Initializing output tree..." << std::endl;
   art::ServiceHandle<art::TFileService> tfs;
