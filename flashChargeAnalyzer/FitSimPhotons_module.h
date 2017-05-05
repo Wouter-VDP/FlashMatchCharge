@@ -26,6 +26,8 @@
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
+#include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/Simulation/SimPhotons.h"
 
 #include "TTree.h"
 #include "TVector3.h"
