@@ -1,0 +1,79 @@
+#include "services_microboone.fcl"
+#include "detectorclocks_microboone.fcl"
+#include "fit_sim_photons.fcl"
+
+process_name : FitSimPhotons      #The process name must NOT contain any underscores
+
+source : {
+  module_type : RootInput
+  maxEvents   : -1
+}
+
+services :
+{
+  scheduler:                { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  TFileService:             { fileName: "FitSimPhotons.root" }
+  TimeTracker:              {}
+  RandomNumberGenerator:    {}
+  @table::microboone_services_reco
+  @table::microboone_simulation_services
+}
+
+outputs: {
+  optionalout: { 
+    module_type: RootOutput
+    fileName: "output_file_FitSimPhotons.root"
+    fastCloning: false 
+  }
+}
+
+
+physics: {
+
+  producers : {
+     # ParameterSets for zero or more producer modules
+  }
+  analyzers: {
+     # ParameterSets for zero or more analyzer modules
+     myana2:  @local::fit_sim_photons
+  }
+
+  filters : {
+     # ParameterSets for zero or more filter modules
+  }
+
+  path0 : [  myana2 ]
+
+  #path1 : [  comma separated list of module labels of analyzer or output modules  ]
+  #path2 : [  comma separated list of module labels of analyzer or output modules  ]
+  #path3 : [  comma separated list of module labels of analyzer or output modules  ]
+
+  #here, just a shorthand: could have done ana: [ myana ] then end_paths: [ ana ]
+  end_paths: [ path0 ]
+
+}
+services.DetectorClocksService.InheritClockConfig:                                   false
+services.DetectorClocksService.TriggerOffsetTPC:                                     -0.400e3
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
+     append:     true       #says to append all messages to the output
+     categories:
+     {
+       ChannelFilter:
+       {
+         limit: 0
+         reportEvery: 0
+       }
+       default:
+       {
+         limit: -1  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}

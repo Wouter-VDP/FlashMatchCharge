@@ -88,3 +88,6 @@ void FitSimPhotons::fillOticalTree(art::Event const & e)
         }
     }
 }
+
+DEFINE_ART_MODULE(FitSimPhotons)
+

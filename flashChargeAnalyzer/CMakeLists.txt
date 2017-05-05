@@ -4,7 +4,7 @@ link_libraries( -L$ENV{BOOST_LIB} -lboost_system -lboost_filesystem)
 
 art_make(
           LIBRARY_NAME
-                        FlashCharge
+                        FitSimPhotons
           LIB_LIBRARIES
                         larpandora_LArPandoraInterface
                         lardataobj_RecoBase
@@ -43,7 +43,8 @@ art_make(
                         ${SIMULATIONBASE}
 
           MODULE_LIBRARIES
-          			SpaceCharge
+          				${FitSimPhotons}
+          				SpaceCharge
                         larpandora_LArPandoraInterface
                         lardataobj_RecoBase
                         nusimdata_SimulationBase
