@@ -83,7 +83,9 @@ void FitSimPhotons::fillPandoraTree(art::Event const & e)
     // Total charge through hits
     for (size_t hitindex =0; hitindex <hit_handle->size() ; ++hitindex )
     {
-        q_z_total+=   hit_handle->at(hitindex).Integral();
+        if (hit_handle->at(hitindex).View() == geo::kZ){
+            q_z_total+=   hit_handle->at(hitindex).Integral();
+        }
     }
 
     if(m_debug)
@@ -98,20 +100,32 @@ void FitSimPhotons::fillPandoraTree(art::Event const & e)
 void FitSimPhotons::fillOticalTree(art::Event const & e)
 {
 	simphot_time.clear();
-	simphot_channel.clear();
-
-    art::ServiceHandle<geo::Geometry> geo; 
+	std::fill(simphot_channel.begin(), simphot_channel.end(), 0);
+    std::fill(recphot_channel.begin(), recphot_channel.end(), 0); 
 
     auto const& simphot_handle = e.getValidHandle< std::vector< sim::SimPhotons > >( "largeant" );
+    auto const& optical_handle = e.getValidHandle<std::vector<recob::OpFlash>>("simpleFlashBeam");
 
-    for(size_t opdet=0; opdet<geo->NOpDets(); ++opdet) 
+    for(auto const& pmtsimvec :  *simphot_handle) 
     {
-        sim::SimPhotons const& simph = simphot_handle->at(opdet);
-        for(auto const& oneph : simph) 
+
+        simphot_channel[pmtsimvec.OpChannel()]+=pmtsimvec.size();
+        //simphot_time.emplace_back(oneph.Time);
+    }
+
+    for(auto const& flash : *optical_handle)
+    {
+        for(unsigned int ipmt=0; ipmt<m_geo->NOpDets() ; ++ipmt)
         {
-            simphot_channel.emplace_back(opdet);
-            simphot_time.emplace_back(oneph.Time);
+            recphot_channel[ipmt]+=flash.PE(ipmt);
         }
+    }
+    if(m_debug)
+    {
+        std::cout << "Number of simpleFlashBeam: \t" <<  optical_handle->size() << std::endl;
+        std::cout << "Number of simphotons: \t" <<  simphot_handle->size() << std::endl;
+        std::cout << "Total simphotons: \t" <<    std::accumulate(simphot_channel.begin(), simphot_channel.end(), 0) << std::endl;
+        std::cout << "Total PE: \t" <<    std::accumulate(recphot_channel.begin(), recphot_channel.end(), 0) << std::endl;
     }
 }
 

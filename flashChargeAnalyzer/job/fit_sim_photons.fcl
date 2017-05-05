@@ -4,7 +4,7 @@ BEGIN_PROLOG
 fit_sim_photons: 
 {
 	module_type: "FitSimPhotons"
-	DebugMode:                true
+	DebugMode:                false
 
 }
 

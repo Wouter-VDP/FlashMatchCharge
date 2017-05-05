@@ -4,12 +4,13 @@ from ROOT import TChain
 from math import isnan,pi
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
+import random
 
 print "Reading tree"
 
 # Opening root file
-#fname = "ElectronSelectionAna.root"
-fname = "../FitSimPhotons.root"
+#fname = "../FitSimPhotons.root"
+fname = "FitSimPhotons_SingleGamma.root"
 
 # Creating TChain
 chain    = TChain("myana/FitSimPhotons")
@@ -34,12 +35,13 @@ print "Running over ", entries, " entries."
 for jentry in xrange( entries ):                
     chain.GetEntry( jentry )
     hits.append(chain.q_z_hit)
-    print "Charge from spacepoints: ",chain.q_z_sps
+    #print "Charge from spacepoints: ",chain.q_z_sps
     sps.append(chain.q_z_sps)
     simp.append(len(chain.simphot_channel))
-    print "Number of sim photons: ",simp[-1]
+    #print "Number of sim photons: ",simp[-1]
     for t in range(len(chain.simphot_time)):
     	time.append(t)
+    	#print t
 
 
 xy = np.vstack([simp,sps])
@@ -55,7 +57,14 @@ plt.ylabel("Sum Hit Integrals obtained through spacepoints [ADC]")
 plt.xlim(-100,5000)
 plt.ylim(-2000,100000)
 plt.tight_layout()
-
 plt.show()
+raw_input("Press Enter to continue...")
+plt.hist(random.sample(time,50000), 50, normed=1, facecolor='blue', alpha=0.75)
+plt.title("Time of Simulated PE")
+plt.xlabel("Time [ns]")
+plt.ylabel("Normalized")
+plt.show()
+
+
 
 

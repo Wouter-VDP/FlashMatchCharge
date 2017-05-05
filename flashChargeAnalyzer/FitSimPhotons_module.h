@@ -28,10 +28,12 @@
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 
 #include "TTree.h"
 #include "TVector3.h"
+#include <numeric>
 
 
 class FitSimPhotons;
@@ -64,7 +66,8 @@ class FitSimPhotons : public art::EDAnalyzer
 
         //Variables
 
-        TTree*                    m_tree;
+        art::ServiceHandle<geo::Geometry> m_geo;
+        TTree*                            m_tree;
 
         /* TREE VARIABLES*/
         //Run Subrun Event
@@ -79,7 +82,10 @@ class FitSimPhotons : public art::EDAnalyzer
 
         //MC photon information
         std::vector<float>        simphot_time;           ///< Array with times of the simphotons 
-        std::vector<short>        simphot_channel;        ///< Array with PMT channel of the simphotons 
+        std::vector<int>          simphot_channel;        ///< Array with PMT channel of the simphotons
+
+        //Reconstructed photon information 
+        std::vector<int>          recphot_channel;        ///< Array with PMT channel of the flash
 
 
         /* FCL VARIABLES */
@@ -90,6 +96,10 @@ class FitSimPhotons : public art::EDAnalyzer
 
 FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p) 
 {
+    simphot_time.resize(m_geo->NOpDets(),0.00);
+    simphot_channel.resize(m_geo->NOpDets(),0);
+    recphot_channel.resize(m_geo->NOpDets(),0);
+
     //initialize fcl parameters
     m_debug         = p.get<bool>("DebugMode",      false);
 
@@ -109,7 +119,10 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
 
     //Set branches for MC photon information
     m_tree->Branch("simphot_time",    "std::vector<float>",   &simphot_time       );
-    m_tree->Branch("simphot_channel", "std::vector<short>",   &simphot_channel    );
+    m_tree->Branch("simphot_channel", "std::vector<int>",     &simphot_channel    );
+
+    //Reconstructed photon information 
+    m_tree->Branch("recphot_channel", "std::vector<int>",     &recphot_channel    );
 }
 
 #endif // FIT_SIM_PHOTONS_H
