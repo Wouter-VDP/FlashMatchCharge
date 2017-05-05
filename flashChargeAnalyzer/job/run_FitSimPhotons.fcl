@@ -15,6 +15,7 @@ services :
   TFileService:             { fileName: "FitSimPhotons.root" }
   TimeTracker:              {}
   RandomNumberGenerator:    {}
+  Geometry:                       @local::microboone_geo
   @table::microboone_services_reco
   @table::microboone_simulation_services
 }
@@ -35,14 +36,14 @@ physics: {
   }
   analyzers: {
      # ParameterSets for zero or more analyzer modules
-     myana2:  @local::fit_sim_photons
+     myana:  @local::fit_sim_photons
   }
 
   filters : {
      # ParameterSets for zero or more filter modules
   }
 
-  path0 : [  myana2 ]
+  path0 : [  myana ]
 
   #path1 : [  comma separated list of module labels of analyzer or output modules  ]
   #path2 : [  comma separated list of module labels of analyzer or output modules  ]

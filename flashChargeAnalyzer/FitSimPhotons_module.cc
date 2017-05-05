@@ -1,6 +1,5 @@
 #include "FitSimPhotons_module.h"
 
-
 void FitSimPhotons::analyze(art::Event const & e)
 {
 	//try {
@@ -34,19 +33,29 @@ void FitSimPhotons::fillPandoraTree(art::Event const & e)
 	q_z_hit   = 0;
 
 	auto const& pfparticle_handle = e.getValidHandle< std::vector< recob::PFParticle > >( "pandoraNu" );
+    auto const& cluster_handle    = e.getValidHandle< std::vector< recob::Cluster    > >( "pandoraNu" );
 	auto const& spacepoint_handle = e.getValidHandle< std::vector< recob::SpacePoint > >( "pandoraNu" );
+    auto const& hit_handle        = e.getValidHandle< std::vector< recob::Hit        > >( "gaushit"   );  
 
 	art::FindOneP< recob::Shower >      shower_per_pfpart  (pfparticle_handle, e, "pandoraNu");
     art::FindOneP< recob::Track >       track_per_pfpart   (pfparticle_handle, e, "pandoraNu");
     art::FindManyP< recob::SpacePoint > spcpnts_per_pfpart (pfparticle_handle, e, "pandoraNu");
-    art::FindManyP< recob::Hit >         hits_per_spcpnts ( spacepoint_handle, e, "pandoraNu");
-    art::FindManyP< recob::Hit >        hits_per_pfpart    (pfparticle_handle, e, "pandoraNu");
-
+    art::FindManyP< recob::Hit >        hits_per_spcpnts   (spacepoint_handle, e, "pandoraNu");
+    art::FindManyP< recob::Cluster >    clusters_per_pfpart(pfparticle_handle, e, "pandoraNu");
+    art::FindManyP< recob::Hit >        hits_per_cluster   (cluster_handle,    e, "pandoraNu");
 
     for (size_t pfpindex =0; pfpindex < pfparticle_handle->size() ; ++pfpindex )
   	{
+        int PDGcode = pfparticle_handle->at(pfpindex).PdgCode();
   		// Total charge through spacepoints
+        if(PDGcode!=11 && PDGcode!=13) continue;
     	std::vector<art::Ptr < recob::SpacePoint > > spcpnts = spcpnts_per_pfpart.at(pfpindex);
+
+        if(m_debug)
+        {
+            std::cout << "PFParticle" << pfpindex <<", with PDGcode " <<  PDGcode <<", has " << spcpnts.size() << " spacepoints " << std::endl;
+        }
+
     	for (auto & _sps : spcpnts) 
     	{
       		std::vector<art::Ptr<recob::Hit> > hits = hits_per_spcpnts.at(_sps.key());
@@ -57,15 +66,32 @@ void FitSimPhotons::fillPandoraTree(art::Event const & e)
         		}
         	}
         }
-        // Total charge through hits directly, no 3D info this way!
-        std::vector<art::Ptr < recob::Hit > > hits = hits_per_pfpart.at(pfpindex);
-    	for (auto & _hit : hits) 
+        // Total charge through clusters
+        std::vector<art::Ptr < recob::Cluster > > clusters = clusters_per_pfpart.at(pfpindex);
+        if(m_debug)
+        {
+            std::cout << "PFParticle" << pfpindex <<", with PDGcode " <<  PDGcode <<", has " << clusters.size() << " clusters " << std::endl;
+        }
+    	for (auto & _cluster : clusters) 
     	{
-    		if (_hit->View() == geo::kZ) 
+    		if (_cluster->View() == geo::kZ) 
     		{
-    			q_z_hit += _hit->Integral();
+    			q_z_hit += _cluster->Integral();
     		}
     	}
+    }
+    // Total charge through hits
+    for (size_t hitindex =0; hitindex <hit_handle->size() ; ++hitindex )
+    {
+        q_z_total+=   hit_handle->at(hitindex).Integral();
+    }
+
+    if(m_debug)
+    {
+        std::cout << "Number PFParticles in event: \t" <<   pfparticle_handle->size() << std::endl;
+        std::cout << "q_z_total: \t" <<   q_z_total << std::endl;
+        std::cout << "q_z_sps : \t" <<   q_z_sps << std::endl;
+        std::cout << "q_z_hit: \t" <<   q_z_hit << std::endl;
     }
 }
 

@@ -2,6 +2,8 @@ BEGIN_PROLOG
 
 flash_charge_ana:
 {
+	module_type: "FlashChargeAna"
+	
     fidvolXstart:               10
     fidvolXstart:               10
     fidvolYstart:               20
