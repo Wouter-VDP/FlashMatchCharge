@@ -31,6 +31,10 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 
+#include "uboone/LLSelectionTool/OpT0Finder/Base/OpT0FinderTypes.h"
+#include "uboone/LLSelectionTool/OpT0Finder/Algorithms/LightCharge.h"
+#include "uboone/LLSelectionTool/OpT0Finder/Base/FlashMatchManager.h"
+
 #include "TTree.h"
 #include "TVector3.h"
 #include <numeric>
@@ -63,9 +67,18 @@ class FitSimPhotons : public art::EDAnalyzer
         void fillPandoraTree(art::Event const & e);
         void fillOticalTree (art::Event const & e);
 
+        flashana::QCluster_t collect3DHitsZ(    std::vector<flashana::Hit3D_t> & hitlist, 
+                        						size_t pfindex, 
+                        						const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
+                        						art::Event const & e);
+
+        flashana::Flash_t Matching(				size_t pfindex, 
+                                            	const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
+                                            	art::Event const & e );
+
 
         //Variables
-
+        ::flashana::FlashMatchManager     m_mgr;
         art::ServiceHandle<geo::Geometry> m_geo;
         TTree*                            m_tree;
 
@@ -102,6 +115,7 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
 
     //initialize fcl parameters
     m_debug         = p.get<bool>("DebugMode",      false);
+    m_mgr.Configure(  p.get<flashana::Config_t>("FlashMatchConfig"));
 
     //initialize output tree
     art::ServiceHandle<art::TFileService> tfs;

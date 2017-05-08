@@ -129,5 +129,56 @@ void FitSimPhotons::fillOticalTree(art::Event const & e)
     }
 }
 
+
+flashana::QCluster_t FitSimPhotons::collect3DHitsZ(    std::vector<flashana::Hit3D_t> & hitlist, 
+                                        size_t pfindex, 
+                                        const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
+                                        art::Event const & e)
+{
+    auto const& spacepoint_handle = e.getValidHandle<std::vector<recob::SpacePoint>>("pandoraNu");
+    art::FindManyP<recob::SpacePoint > spcpnts_per_pfpart   ( pfparticles,       e, "pandoraNu" );
+    art::FindManyP<recob::Hit > hits_per_spcpnts            ( spacepoint_handle, e, "pandoraNu" );
+
+    std::vector<art::Ptr < recob::SpacePoint > > spcpnts = spcpnts_per_pfpart.at(pfindex);
+
+    // Loop over the spacepoints and get the associated hits:
+    for (auto & _sps : spcpnts) {
+        std::vector<art::Ptr<recob::Hit> > hits = hits_per_spcpnts.at(_sps.key());
+        // Add the hits to the weighted average, if they are collection hits:
+        for (auto & hit : hits) {
+            if (hit->View() == geo::kZ) {
+            // Collection hits only
+                auto xyz = _sps->XYZ();
+                flashana::Hit3D_t hit3D; //Collection plane hits
+                hit3D.x = xyz[0];
+                hit3D.y = xyz[1];
+                hit3D.z = xyz[2];
+                hit3D.plane =  2;
+                hit3D.q = hit->Integral();
+
+                hitlist.emplace_back(hit3D);
+            }
+        }
+    }
+    //the conversion number is a pure guess! will this depend on x?
+    flashana::QCluster_t result = ((flashana::LightCharge*)(m_mgr.GetCustomAlgo("LightCharge")))->FlashHypothesisCharge(hitlist, 1);
+    return result;
+}
+
+flashana::Flash_t FitSimPhotons::Matching(  size_t pfindex, 
+                                            const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
+                                            art::Event const & e) 
+{
+    std::vector<flashana::Hit3D_t> hitlist;
+    flashana::QCluster_t qcluster = collect3DHitsZ(hitlist, pfindex, pfparticles, e);
+
+    flashana::Flash_t flashHypo;
+    flashHypo.pe_v.resize(32);
+
+    return flashHypo;
+}
+
+
+
 DEFINE_ART_MODULE(FitSimPhotons)
 

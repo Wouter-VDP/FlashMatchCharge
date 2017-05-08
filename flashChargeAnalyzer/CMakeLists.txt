@@ -9,6 +9,12 @@ art_make(
                         larpandora_LArPandoraInterface
                         lardataobj_RecoBase
                         nusimdata_SimulationBase
+
+                        uboonecode_uboone_BasicTool_GeoAlgo
+                        uboone_UBFlashFinder
+                        uboonecode_uboone_SelectionTool_OpT0FinderBase
+                        uboonecode_uboone_SelectionTool_OpT0FinderAlgorithms
+
                         larcore_Geometry
                         larcore_Geometry_Geometry_service
                         art_Framework_Core
@@ -47,6 +53,12 @@ art_make(
                         larpandora_LArPandoraInterface
                         lardataobj_RecoBase
                         nusimdata_SimulationBase
+
+                        uboonecode_uboone_BasicTool_GeoAlgo
+                        uboonecode_uboone_SelectionTool_OpT0FinderBase
+                        uboonecode_uboone_SelectionTool_OpT0FinderAlgorithms
+                        uboone_UBFlashFinder
+
                         larcore_Geometry
                         larcore_Geometry_Geometry_service
                         art_Framework_Core

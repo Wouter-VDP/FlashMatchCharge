@@ -39,8 +39,8 @@ for jentry in xrange( entries ):
     sps.append(chain.q_z_sps)
     simp.append(len(chain.simphot_channel))
     #print "Number of sim photons: ",simp[-1]
-    for t in range(len(chain.simphot_time)):
-    	time.append(t)
+    #for t in range(len(chain.simphot_time)):
+    	#time.append(t)
     	#print t
 
 
@@ -58,12 +58,12 @@ plt.xlim(-100,5000)
 plt.ylim(-2000,100000)
 plt.tight_layout()
 plt.show()
-raw_input("Press Enter to continue...")
-plt.hist(random.sample(time,50000), 50, normed=1, facecolor='blue', alpha=0.75)
-plt.title("Time of Simulated PE")
-plt.xlabel("Time [ns]")
-plt.ylabel("Normalized")
-plt.show()
+#raw_input("Press Enter to continue...")
+#plt.hist(random.sample(time,50000), 50, normed=1, facecolor='blue', alpha=0.75)
+#plt.title("Time of Simulated PE")
+#plt.xlabel("Time [ns]")
+#plt.ylabel("Normalized")
+#plt.show()
 
 
 
