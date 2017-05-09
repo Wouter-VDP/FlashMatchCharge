@@ -15,10 +15,17 @@ void FitSimPhotons::fillTree(art::Event const & e)
 	subrun = e.subRun();
 	event  = e.event();
 
-	std::cout<<"\n Begin filling variables of (run,subrun,event) \t ("<< run <<"," <<subrun <<"," <<event<< ")"<< std::endl;
+    auto const& mcparticle_handle = e.getValidHandle< std::vector< simb::MCParticle > >( "largeant" );
+    true_energy = mcparticle_handle->at(0).E();
+
+	std::cout<<"\n Begin filling variables of (run,subrun,event) \t ("<< run <<"," <<subrun <<"," <<event<< ") Particle energy: "<< true_energy << "GeV" <<std::endl;
 
 	fillPandoraTree(e);       // Fill PandoraNu information
 	fillOticalTree(e);        // Fill optical information
+
+    flashana::Flash_t flashHypo = makeHypo(e);
+    flashhypo_channel = flashHypo.pe_v;    // Fill the resonstructed hypothetical flash corresponding to all pfps
+    flashhypo_time    = flashHypo.time;
 
 	std::cout<<"variables filled, fill tree"<<std::endl;
     m_tree->Fill();
@@ -115,10 +122,14 @@ void FitSimPhotons::fillOticalTree(art::Event const & e)
 
     for(auto const& flash : *optical_handle)
     {
+        std::cout << "OpticalFlash: ";
         for(unsigned int ipmt=0; ipmt<m_geo->NOpDets() ; ++ipmt)
         {
             recphot_channel[ipmt]+=flash.PE(ipmt);
+            std::cout << flash.PE(ipmt) << ',' ;
         }
+        std::cout << std::endl;
+        recphot_time = flash.Time();
     }
     if(m_debug)
     {
@@ -130,11 +141,12 @@ void FitSimPhotons::fillOticalTree(art::Event const & e)
 }
 
 
-flashana::QCluster_t FitSimPhotons::collect3DHitsZ(    std::vector<flashana::Hit3D_t> & hitlist, 
-                                        size_t pfindex, 
-                                        const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
-                                        art::Event const & e)
+flashana::QCluster_t FitSimPhotons::collect3DHitsZ( size_t pfindex, 
+                                                    const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
+                                                    art::Event const & e)
 {
+    std::vector<flashana::Hit3D_t> hitlist;
+
     auto const& spacepoint_handle = e.getValidHandle<std::vector<recob::SpacePoint>>("pandoraNu");
     art::FindManyP<recob::SpacePoint > spcpnts_per_pfpart   ( pfparticles,       e, "pandoraNu" );
     art::FindManyP<recob::Hit > hits_per_spcpnts            ( spacepoint_handle, e, "pandoraNu" );
@@ -165,15 +177,28 @@ flashana::QCluster_t FitSimPhotons::collect3DHitsZ(    std::vector<flashana::Hit
     return result;
 }
 
-flashana::Flash_t FitSimPhotons::Matching(  size_t pfindex, 
-                                            const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
-                                            art::Event const & e) 
+flashana::Flash_t FitSimPhotons::makeHypo(art::Event const & e) 
 {
-    std::vector<flashana::Hit3D_t> hitlist;
-    flashana::QCluster_t qcluster = collect3DHitsZ(hitlist, pfindex, pfparticles, e);
+    auto const& pfparticle_handle = e.getValidHandle< std::vector< recob::PFParticle > >( "pandoraNu" );
+    flashana::QCluster_t summed_qcluster;
+    summed_qcluster.clear();
+
+    for (size_t pfpindex =0; pfpindex < pfparticle_handle->size() ; ++pfpindex )
+    {
+        summed_qcluster += collect3DHitsZ(pfpindex, pfparticle_handle, e);    
+    }
 
     flashana::Flash_t flashHypo;
     flashHypo.pe_v.resize(32);
+    ((flashana::PhotonLibHypothesis*)(m_mgr.GetAlgo(flashana::kFlashHypothesis)))->FillEstimate(summed_qcluster,flashHypo);
+
+    std::cout << "FlashHypo: ";
+    for (unsigned int ipmt = 0; ipmt < m_geo->NOpDets(); ipmt++)
+    {
+        std::cout << flashHypo.pe_v[ipmt] << ',' ;
+    }
+    std::cout << std::endl;
+
 
     return flashHypo;
 }

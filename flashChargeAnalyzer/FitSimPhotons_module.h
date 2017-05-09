@@ -31,9 +31,13 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 
+#include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
+
 #include "uboone/LLSelectionTool/OpT0Finder/Base/OpT0FinderTypes.h"
 #include "uboone/LLSelectionTool/OpT0Finder/Algorithms/LightCharge.h"
 #include "uboone/LLSelectionTool/OpT0Finder/Base/FlashMatchManager.h"
+#include "uboone/LLSelectionTool/OpT0Finder/Algorithms/PhotonLibHypothesis.h"
 
 #include "TTree.h"
 #include "TVector3.h"
@@ -67,14 +71,11 @@ class FitSimPhotons : public art::EDAnalyzer
         void fillPandoraTree(art::Event const & e);
         void fillOticalTree (art::Event const & e);
 
-        flashana::QCluster_t collect3DHitsZ(    std::vector<flashana::Hit3D_t> & hitlist, 
-                        						size_t pfindex, 
+        flashana::QCluster_t collect3DHitsZ( 	size_t pfindex, 
                         						const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
                         						art::Event const & e);
 
-        flashana::Flash_t Matching(				size_t pfindex, 
-                                            	const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
-                                            	art::Event const & e );
+        flashana::Flash_t makeHypo(art::Event const & e );
 
 
         //Variables
@@ -92,13 +93,17 @@ class FitSimPhotons : public art::EDAnalyzer
         float                     q_z_total;              ///< The total charge on the collectionplane in beamwindow 
         float                     q_z_sps;                ///< The charge on the collectionplane in beamwindow from PFPtree spacepoints
         float                     q_z_hit;                ///< The charge on the collectionplane in beamwindow from PFPtree hits
+        std::vector<double>       flashhypo_channel;      ///< Array with PMT channel of the hypothetical flash made by the flashmatcher (DOUBLE)
+        float                     flashhypo_time;         ///< time of the hypothetical flash made by the flashmatcher
 
-        //MC photon information
+        //MC information
+        float                     true_energy;            ///< The true particle energy, for single particle generation
         std::vector<float>        simphot_time;           ///< Array with times of the simphotons 
         std::vector<int>          simphot_channel;        ///< Array with PMT channel of the simphotons
 
         //Reconstructed photon information 
         std::vector<int>          recphot_channel;        ///< Array with PMT channel of the flash
+        float                     recphot_time;           ///< time of the simplebeamflash
 
 
         /* FCL VARIABLES */
@@ -130,13 +135,17 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
     m_tree->Branch("q_z_total",     &q_z_total,    "q_z_total/F" );
     m_tree->Branch("q_z_sps",       &q_z_sps,      "q_z_sps/F"   );
     m_tree->Branch("q_z_hit",       &q_z_hit,      "q_z_hit/F"   );
+    m_tree->Branch("flashhypo_channel","std::vector<double>",  &flashhypo_channel );
+    m_tree->Branch("flashhypo_time",   &flashhypo_time,        "flashhypo_time/F" );
 
-    //Set branches for MC photon information
+    //Set branches for MC information
+    m_tree->Branch("true_energy",     &true_energy,           "true_energy/F"    );
     m_tree->Branch("simphot_time",    "std::vector<float>",   &simphot_time       );
     m_tree->Branch("simphot_channel", "std::vector<int>",     &simphot_channel    );
 
     //Reconstructed photon information 
     m_tree->Branch("recphot_channel", "std::vector<int>",     &recphot_channel    );
+    m_tree->Branch("recphot_time",    &recphot_time,          "recphot_time/F"    );
 }
 
 #endif // FIT_SIM_PHOTONS_H
