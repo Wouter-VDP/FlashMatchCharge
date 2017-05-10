@@ -129,7 +129,7 @@ private:
   //Run Subrun Event
   Short_t    run;
   Short_t    subrun;
-  Int_t    event;
+  Int_t      event;
 
   //Truth information
   Bool_t    true_fid;                                  ///< Is there a neutrino in the fiducial volume? 
