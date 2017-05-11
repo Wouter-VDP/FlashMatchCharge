@@ -24,13 +24,16 @@ void FitSimPhotons::fillTree(art::Event const & e)
     true_x      = mcparticle_handle->at(0).Vx();
     true_y      = mcparticle_handle->at(0).Vy();
     true_z      = mcparticle_handle->at(0).Vz();
+    true_end_x  = mcparticle_handle->at(0).EndX();
+    true_end_y  = mcparticle_handle->at(0).EndY();
+    true_end_z  = mcparticle_handle->at(0).EndZ();
 
     std::cout<<"\n Begin filling variables of (run,subrun,event) \t ("<< run <<"," <<subrun <<"," <<event<< ") Particle energy: "<< true_energy << "GeV, Time:" << true_time << "?" << std::endl;
 
     fillPandoraTree(e);       // Fill PandoraNu information
     ::flashana::Flash_t flashReco = fillOticalTree(e);        // Fill optical information
     calculateChargeCenter(e);
-    if(flashReco.pe_v.size()==m_geo->NOpDets()) 
+    if(flashReco.pe_v.size()==m_geo->NOpDets())
     {
         flashana::Flash_t flashHypo = makeMatch(e,flashReco);
         flashhypo_channel = flashHypo.pe_v;    // Fill the resonstructed hypothetical flash corresponding to all pfps
@@ -38,7 +41,7 @@ void FitSimPhotons::fillTree(art::Event const & e)
     }
     else
     {
-        std::cout<<"vsomething went wrong, no recoflash object found in beamtime!"<<std::endl;
+        std::cout<<"No recob::OpFlash object found in beamtime!"<<std::endl;
     }
 
     std::cout<<"variables filled, fill tree"<<std::endl;
@@ -118,7 +121,10 @@ void FitSimPhotons::fillPandoraTree(art::Event const & e)
 
 flashana::Flash_t FitSimPhotons::fillOticalTree(art::Event const & e)
 {
-    std::cout << "Filling OpticalTree information " << std::endl;
+    if(m_debug)
+    {
+        std::cout << "Filling OpticalTree information " << std::endl;
+    }
     std::fill(recphot_channel.begin(), recphot_channel.end(), 0);
 
     auto const& simphot_handle = e.getValidHandle< std::vector< sim::SimPhotons > >( "largeant" );
@@ -131,13 +137,16 @@ flashana::Flash_t FitSimPhotons::fillOticalTree(art::Event const & e)
         //simphot_time.emplace_back(oneph.Time);
     }
 
-    ::flashana::Flash_t f;
+    // Loop over the beamflashes, convert the one that is in beamtime and has the highest PE to the flash_t, if there is none, return a null object, good luck
+
+    ::flashana::Flash_t recoFlash;
+    int maxPE = 0;
     for(auto const& flash : *optical_handle)
     {
         if(flash.Time()>m_startbeamtime && flash.Time()<m_endbeamtime)    //Expect that this happens only one time, cetainly of with single particles for now
         {
-            center_of_flash_y = flash.YCenter();
-            center_of_flash_z = flash.ZCenter();
+            int thisPE =0;
+            ::flashana::Flash_t f;
             f.x = f.x_err = 0;
             f.y = flash.YCenter();
             f.z = flash.ZCenter();
@@ -145,15 +154,23 @@ flashana::Flash_t FitSimPhotons::fillOticalTree(art::Event const & e)
             f.z_err = flash.ZWidth();
             f.pe_v.resize(m_geo->NOpDets());
             f.pe_err_v.resize(m_geo->NOpDets());
+            f.time = flash.Time();
             for(unsigned int ipmt=0; ipmt<m_geo->NOpDets() ; ++ipmt)
             {
                 unsigned int opdet = m_geo->OpDetFromOpChannel(ipmt);
                 recphot_channel[opdet]+=flash.PE(ipmt);
                 f.pe_v[opdet] = flash.PE(ipmt);
                 f.pe_err_v[opdet] = sqrt(flash.PE(ipmt));
+                thisPE+=flash.PE(ipmt);
             }
-            std::cout << std::endl;
-            recphot_time = flash.Time();
+
+            if(thisPE>maxPE)
+            {
+                recphot_time = flash.Time();
+                recoFlash=f;
+                center_of_flash_y = flash.YCenter();
+                center_of_flash_z = flash.ZCenter();
+            }
         }
 
     }
@@ -164,7 +181,7 @@ flashana::Flash_t FitSimPhotons::fillOticalTree(art::Event const & e)
         std::cout << "Total simphotons: \t" <<    std::accumulate(simphot_channel.begin(), simphot_channel.end(), 0) << std::endl;
         std::cout << "Total PE: \t" <<    std::accumulate(recphot_channel.begin(), recphot_channel.end(), 0) << std::endl;
     }
-    return f;
+    return recoFlash;
 }
 
 
@@ -172,7 +189,11 @@ flashana::QCluster_t FitSimPhotons::collect3DHitsZ( size_t pfindex,
         const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
         art::Event const & e)
 {
-    std::cout << "Collecting hits information " << std::endl;
+    if(m_debug)
+    {
+        std::cout << "Collecting hits information " << std::endl;
+    }
+
     std::vector<flashana::Hit3D_t> hitlist;
 
     auto const& spacepoint_handle = e.getValidHandle<std::vector<recob::SpacePoint>>("pandoraNu");
@@ -210,11 +231,14 @@ flashana::QCluster_t FitSimPhotons::collect3DHitsZ( size_t pfindex,
 
 flashana::Flash_t FitSimPhotons::makeMatch(art::Event const & e, flashana::Flash_t & flashReco)
 {
-    std::cout << "Making the flash hypothesis and matching the qcluster to the opflash" << std::endl;
+    if(m_debug)
+    {
+        std::cout << "Making the flash hypothesis and matching the qcluster to the opflash" << std::endl;
+    }
     auto const& pfparticle_handle = e.getValidHandle< std::vector< recob::PFParticle > >( "pandoraNu" );
     flashana::QCluster_t summed_qcluster;
     summed_qcluster.clear();
-    
+
 
     for (size_t pfpindex =0; pfpindex < pfparticle_handle->size() ; ++pfpindex )
     {
@@ -231,7 +255,10 @@ flashana::Flash_t FitSimPhotons::makeMatch(art::Event const & e, flashana::Flash
     {
         hyposum+=flashHypo.pe_v[ipmt];
         recosum+=flashReco.pe_v[ipmt];
-        std::cout << "for pmt " <<  ipmt << ", hypoPE: " << flashHypo.pe_v[ipmt] << ", recoPE: " << flashReco.pe_v[ipmt] << std::endl;
+        if(m_debug)
+        {
+            std::cout << "for pmt " <<  ipmt << ", hypoPE: " << flashHypo.pe_v[ipmt] << ", recoPE: " << flashReco.pe_v[ipmt] << std::endl;
+        }
     }
 
     if(hyposum>0.01 && recosum>0.01)
@@ -250,11 +277,12 @@ flashana::Flash_t FitSimPhotons::makeMatch(art::Event const & e, flashana::Flash
         {
             center_of_flash_x = m_result[0].tpc_point.x;
             matchscore        = m_result[0].score;
+            std::cout << "The score of the match is: " << matchscore << std::endl;
         }
     }
     else
     {
-         std::cout << "Something must be wrong,the flash hypothesis was 0!" <<std::endl;
+        std::cout << "Something must be wrong,the flash hypothesis or the OpFlash was 0!" <<std::endl;
     }
     return flashHypo;
 }
@@ -263,7 +291,10 @@ flashana::Flash_t FitSimPhotons::makeMatch(art::Event const & e, flashana::Flash
 // Method to calculate the total the center for a parent particle (index of neutrino pfp)
 void FitSimPhotons::calculateChargeCenter(const art::Event & e)
 {
-    std::cout << "Calculating the center of charge" << std::endl;
+    if(m_debug)
+    {
+        std::cout << "Calculating the center of charge" << std::endl;
+    }
     // Get the associations from pfparticle to spacepoint
     auto const& spacepoint_handle = e.getValidHandle< std::vector<recob::SpacePoint > > ( "pandoraNu" );
     auto const& pfparticle_handle = e.getValidHandle< std::vector< recob::PFParticle > >( "pandoraNu" );

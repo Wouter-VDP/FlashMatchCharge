@@ -105,12 +105,15 @@ private:
     float                     center_of_charge_z;     ///< z Center of deposited charge
 
     //MC information
-   	unsigned short            true_pdg;				  ///< The true particle pdgcode, for single particle generation
+    unsigned short            true_pdg;				  ///< The true particle pdgcode, for single particle generation
     float                     true_energy;            ///< The true particle energy, for single particle generation
     float                     true_time;              ///< The true particle interaction time, for single particle generation
     float                     true_x;                 ///< The true particle interaction positon
-    float                     true_z;
     float                     true_y;
+    float                     true_z;
+    float                     true_end_x;             ///< The true particle end positon
+    float                     true_end_y;
+    float                     true_end_z;
     std::vector<float>        simphot_time;           ///< Array with times of the simphotons
     std::vector<int>          simphot_channel;        ///< Array with PMT channel of the simphotons
 
@@ -170,6 +173,9 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
     m_tree->Branch("true_x",          &true_x,                "true_x/F"          );
     m_tree->Branch("true_y",          &true_y,                "true_y/F"          );
     m_tree->Branch("true_z",          &true_z,                "true_z/F"          );
+    m_tree->Branch("true_end_x",      &true_end_x,            "true_end_x/F"      );
+    m_tree->Branch("true_end_y",      &true_end_y,            "true_end_y/F"      );
+    m_tree->Branch("true_end_z",      &true_end_z,            "true_end_z/F"      );
     m_tree->Branch("simphot_time",    "std::vector<float>",   &simphot_time       );
     m_tree->Branch("simphot_channel", "std::vector<int>",     &simphot_channel    );
 
