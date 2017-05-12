@@ -95,6 +95,7 @@ private:
     unsigned int              event;
 
     //PandoraNu information
+    unsigned short            nr_pfp;                 ///< Number of pfparticles in the event
     float                     q_z_total;              ///< The total charge on the collectionplane in beamwindow
     float                     q_z_sps;                ///< The charge on the collectionplane in beamwindow from PFPtree spacepoints
     float                     q_z_hit;                ///< The charge on the collectionplane in beamwindow from PFPtree hits
@@ -111,6 +112,9 @@ private:
     float                     true_x;                 ///< The true particle interaction positon
     float                     true_y;
     float                     true_z;
+    float                     true_px;                 ///< The true particle start momentum (direction)
+    float                     true_py;
+    float                     true_pz;
     float                     true_end_x;             ///< The true particle end positon
     float                     true_end_y;
     float                     true_end_z;
@@ -122,7 +126,10 @@ private:
     float                     recphot_time;           ///< time of the simplebeamflash
     float                     center_of_flash_x;      ///< x Center of opFlash
     float                     center_of_flash_y;      ///< y Center of opFlash
-    float                     center_of_flash_z;      ///< z Center of opFlash
+    float                     center_of_flash_z;      ///< z center of opFlash
+    float                     width_of_flash_x;      ///< x width of opFlash
+    float                     width_of_flash_y;      ///< y width of opFlash
+    float                     width_of_flash_z;      ///< z width of opFlash
     float                     matchscore;             ///< Matchscore of the single opflash with the qcluster containing all the pfparticles
 
     /* FCL VARIABLES */
@@ -138,6 +145,7 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
     simphot_time.resize(m_geo->NOpDets(),0.00);
     simphot_channel.resize(m_geo->NOpDets(),0);
     recphot_channel.resize(m_geo->NOpDets(),0);
+    flashhypo_channel.resize(m_geo->NOpDets(),0);
 
     //initialize fcl parameters
     m_debug         = p.get<bool> ("DebugMode"          ,false );
@@ -156,14 +164,15 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
     m_tree->Branch("event",        &event,         "event/i"     );
 
     //Set branches for PandoraNU information
-    m_tree->Branch("q_z_total",     &q_z_total,    "q_z_total/F" );
-    m_tree->Branch("q_z_sps",       &q_z_sps,      "q_z_sps/F"   );
-    m_tree->Branch("q_z_hit",       &q_z_hit,      "q_z_hit/F"   );
-    m_tree->Branch("flashhypo_channel","std::vector<double>",  &flashhypo_channel );
-    m_tree->Branch("flashhypo_time",   &flashhypo_time,        "flashhypo_time/F" );
-    m_tree->Branch("center_of_charge_x",   &center_of_charge_x,        "center_of_charge_x/F" );
-    m_tree->Branch("center_of_charge_y",   &center_of_charge_y,        "center_of_charge_y/F" );
-    m_tree->Branch("center_of_charge_z",   &center_of_charge_z,        "center_of_charge_z/F" );
+    m_tree->Branch("nr_pfp",               &nr_pfp,                 "nr_pfp/s"             );
+    m_tree->Branch("q_z_total",            &q_z_total,              "q_z_total/F"          );
+    m_tree->Branch("q_z_sps",              &q_z_sps,                "q_z_sps/F"            );
+    m_tree->Branch("q_z_hit",              &q_z_hit,                "q_z_hit/F"            );
+    m_tree->Branch("flashhypo_channel",    "std::vector<double>",   &flashhypo_channel     );
+    m_tree->Branch("flashhypo_time",       &flashhypo_time,         "flashhypo_time/F"     );
+    m_tree->Branch("center_of_charge_x",   &center_of_charge_x,     "center_of_charge_x/F" );
+    m_tree->Branch("center_of_charge_y",   &center_of_charge_y,     "center_of_charge_y/F" );
+    m_tree->Branch("center_of_charge_z",   &center_of_charge_z,     "center_of_charge_z/F" );
 
 
     //Set branches for MC information
@@ -173,6 +182,9 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
     m_tree->Branch("true_x",          &true_x,                "true_x/F"          );
     m_tree->Branch("true_y",          &true_y,                "true_y/F"          );
     m_tree->Branch("true_z",          &true_z,                "true_z/F"          );
+    m_tree->Branch("true_x",          &true_px,                "true_x/F"          );
+    m_tree->Branch("true_y",          &true_py,                "true_y/F"          );
+    m_tree->Branch("true_z",          &true_pz,                "true_z/F"          );
     m_tree->Branch("true_end_x",      &true_end_x,            "true_end_x/F"      );
     m_tree->Branch("true_end_y",      &true_end_y,            "true_end_y/F"      );
     m_tree->Branch("true_end_z",      &true_end_z,            "true_end_z/F"      );
@@ -185,6 +197,9 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
     m_tree->Branch("center_of_flash_x",   &center_of_flash_x,        "center_of_flash_x/F" );
     m_tree->Branch("center_of_flash_y",   &center_of_flash_y,        "center_of_flash_y/F" );
     m_tree->Branch("center_of_flash_z",   &center_of_flash_z,        "center_of_flash_z/F" );
+    m_tree->Branch("width_of_flash_x",   &width_of_flash_x,        "width_of_flash_x/F" );
+    m_tree->Branch("width_of_flash_y",   &width_of_flash_y,        "width_of_flash_y/F" );
+    m_tree->Branch("width_of_flash_z",   &width_of_flash_z,        "width_of_flash_z/F" );
     m_tree->Branch("matchscore",          &matchscore,               "matchscore/F"        );
 
 }
@@ -196,10 +211,11 @@ void FitSimPhotons::clearTreeVar()
     event             = 0;
 
     //PandoraNu information
+    nr_pfp            = 0;
     q_z_total         = 0;
     q_z_sps           = 0;
     q_z_hit           = 0;
-    flashhypo_channel.clear();
+    std::fill(flashhypo_channel.begin(), flashhypo_channel.end(), 0);
     flashhypo_time    = 0;
     center_of_charge_x= 0;
     center_of_charge_y= 0;
@@ -211,6 +227,12 @@ void FitSimPhotons::clearTreeVar()
     true_x            = 0;
     true_y            = 0;
     true_z            = 0;
+    true_px           = 0;
+    true_py           = 0;
+    true_pz           = 0;
+    true_end_x        = 0;
+    true_end_y        = 0;
+    true_end_z        = 0;
     simphot_time.clear();
     std::fill(simphot_channel.begin(), simphot_channel.end(), 0);
 
@@ -221,6 +243,10 @@ void FitSimPhotons::clearTreeVar()
     center_of_flash_x = 0;
     center_of_flash_y = 0;
     center_of_flash_z = 0;
+    width_of_flash_x= 0;
+    width_of_flash_y= 0;
+    width_of_flash_z= 0;
+
 }
 
 #endif // FIT_SIM_PHOTONS_H

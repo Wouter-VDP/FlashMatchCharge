@@ -24,19 +24,23 @@ void FitSimPhotons::fillTree(art::Event const & e)
     true_x      = mcparticle_handle->at(0).Vx();
     true_y      = mcparticle_handle->at(0).Vy();
     true_z      = mcparticle_handle->at(0).Vz();
+    true_px     = mcparticle_handle->at(0).Px();
+    true_py     = mcparticle_handle->at(0).Py();
+    true_pz     = mcparticle_handle->at(0).Pz();
     true_end_x  = mcparticle_handle->at(0).EndX();
     true_end_y  = mcparticle_handle->at(0).EndY();
     true_end_z  = mcparticle_handle->at(0).EndZ();
 
     std::cout<<"\n Begin filling variables of (run,subrun,event) \t ("<< run <<"," <<subrun <<"," <<event<< ") Particle energy: "<< true_energy << "GeV, Time:" << true_time << "?" << std::endl;
 
-    fillPandoraTree(e);       // Fill PandoraNu information
+    calculateChargeCenter(e);                                 // Fill q_z_sps and center_of_charge
+    fillPandoraTree(e);                                       // Fill PandoraNu information
     ::flashana::Flash_t flashReco = fillOticalTree(e);        // Fill optical information
-    calculateChargeCenter(e);
+    
     if(flashReco.pe_v.size()==m_geo->NOpDets())
     {
         flashana::Flash_t flashHypo = makeMatch(e,flashReco);
-        flashhypo_channel = flashHypo.pe_v;    // Fill the resonstructed hypothetical flash corresponding to all pfps
+        flashhypo_channel = flashHypo.pe_v;                   // Fill the resonstructed hypothetical flash corresponding to all pfps
         flashhypo_time    = flashHypo.time;
     }
     else
@@ -64,7 +68,8 @@ void FitSimPhotons::fillPandoraTree(art::Event const & e)
     art::FindManyP< recob::Cluster >    clusters_per_pfpart(pfparticle_handle, e, "pandoraNu");
     art::FindManyP< recob::Hit >        hits_per_cluster   (cluster_handle,    e, "pandoraNu");
 
-    for (size_t pfpindex =0; pfpindex < pfparticle_handle->size() ; ++pfpindex )
+    nr_pfp = pfparticle_handle->size();
+    for (size_t pfpindex =0; pfpindex < nr_pfp ; ++pfpindex )
     {
         int PDGcode = pfparticle_handle->at(pfpindex).PdgCode();
         // Total charge through spacepoints
@@ -76,17 +81,7 @@ void FitSimPhotons::fillPandoraTree(art::Event const & e)
             std::cout << "PFParticle" << pfpindex <<", with PDGcode " <<  PDGcode <<", has " << spcpnts.size() << " spacepoints " << std::endl;
         }
 
-        for (auto & _sps : spcpnts)
-        {
-            std::vector<art::Ptr<recob::Hit> > hits = hits_per_spcpnts.at(_sps.key());
-            for (auto & hit : hits)
-            {
-                if (hit->View() == geo::kZ)
-                {
-                    q_z_sps += hit->Integral();
-                }
-            }
-        }
+        // Total charge through spacepoint is caluclated in the calculate_center_of_charge function
         // Total charge through clusters
         std::vector<art::Ptr < recob::Cluster > > clusters = clusters_per_pfpart.at(pfpindex);
         if(m_debug)
@@ -125,7 +120,6 @@ flashana::Flash_t FitSimPhotons::fillOticalTree(art::Event const & e)
     {
         std::cout << "Filling OpticalTree information " << std::endl;
     }
-    std::fill(recphot_channel.begin(), recphot_channel.end(), 0);
 
     auto const& simphot_handle = e.getValidHandle< std::vector< sim::SimPhotons > >( "largeant" );
     auto const& optical_handle = e.getValidHandle<std::vector<recob::OpFlash>>("simpleFlashBeam");
@@ -170,6 +164,8 @@ flashana::Flash_t FitSimPhotons::fillOticalTree(art::Event const & e)
                 recoFlash=f;
                 center_of_flash_y = flash.YCenter();
                 center_of_flash_z = flash.ZCenter();
+                width_of_flash_y = flash.YWidth();
+                width_of_flash_z = flash.ZWidth();
             }
         }
 
@@ -276,8 +272,8 @@ flashana::Flash_t FitSimPhotons::makeMatch(art::Event const & e, flashana::Flash
         else
         {
             center_of_flash_x = m_result[0].tpc_point.x;
+            width_of_flash_x = m_result[0].tpc_point_err.x;
             matchscore        = m_result[0].score;
-            std::cout << "The score of the match is: " << matchscore << std::endl;
         }
     }
     else
@@ -319,6 +315,7 @@ void FitSimPhotons::calculateChargeCenter(const art::Event & e)
         // Loop over the spacepoints and get the associated hits:
         for (auto & _sps : spcpnts)
         {
+            auto xyz = _sps->XYZ();
             std::vector<art::Ptr<recob::Hit> > hits = hits_per_spcpnts.at(_sps.key());
             // Add the hits to the weighted average, if they are collection hits:
             for (auto & hit : hits)
@@ -326,13 +323,12 @@ void FitSimPhotons::calculateChargeCenter(const art::Event & e)
                 if (hit->View() == geo::kZ)
                 {
                     // Collection hits only
-                    double weight = hit->Integral();
-                    auto xyz = _sps->XYZ();
+                    float weight = hit->Integral();
                     chargecenter[0] += (xyz[0]) * weight;
                     chargecenter[1] += (xyz[1]) * weight;
                     chargecenter[2] += (xyz[2]) * weight;
                     totalweight += weight;
-                    break; // Exit the loop over hits
+                    //break; // Exit the loop over hits
                 } // if collection
 
             } // hits
@@ -347,6 +343,7 @@ void FitSimPhotons::calculateChargeCenter(const art::Event & e)
     chargecenter[1] /= totalweight;
     chargecenter[2] /= totalweight;
 
+    q_z_sps = totalweight;
     // Store the data:
     center_of_charge_x =chargecenter[0];
     center_of_charge_y =chargecenter[1];
