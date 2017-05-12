@@ -30,12 +30,15 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/SimPhotons.h"
+#include "lardataobj/MCBase/MCShower.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 
+#include "uboone/LLBasicTool/GeoAlgo/GeoTrajectory.h"
 #include "uboone/LLSelectionTool/OpT0Finder/Base/OpT0FinderTypes.h"
 #include "uboone/LLSelectionTool/OpT0Finder/Algorithms/LightCharge.h"
+#include "uboone/LLSelectionTool/OpT0Finder/Algorithms/LightPath.h"
 #include "uboone/LLSelectionTool/OpT0Finder/Base/FlashMatchManager.h"
 #include "uboone/LLSelectionTool/OpT0Finder/Algorithms/PhotonLibHypothesis.h"
 
@@ -77,7 +80,11 @@ private:
                                             art::Event const & e);
 
     flashana::Flash_t makeMatch(art::Event const & e, flashana::Flash_t & flashReco);
-    void makeMatch(flashana::Flash_t const & flash, flashana::QCluster_t const & );
+
+    void trackSegMatch(art::Event const & e, flashana::Flash_t & flashReco);
+
+    flashana::QCluster_t GetQCluster(const std::vector<recob::Track> track_v);
+
 
 
 
@@ -112,10 +119,10 @@ private:
     float                     true_x;                 ///< The true particle interaction positon
     float                     true_y;
     float                     true_z;
-    float                     true_px;                 ///< The true particle start momentum (direction)
+    float                     true_px;                ///< The true particle start momentum (direction)
     float                     true_py;
     float                     true_pz;
-    float                     true_end_x;             ///< The true particle end positon
+    float                     true_end_x;             ///< The true particle end positon, in the case of shower, the MCShower object is taken for endpoint
     float                     true_end_y;
     float                     true_end_z;
     std::vector<float>        simphot_time;           ///< Array with times of the simphotons
@@ -127,12 +134,19 @@ private:
     float                     center_of_flash_x;      ///< x Center of opFlash
     float                     center_of_flash_y;      ///< y Center of opFlash
     float                     center_of_flash_z;      ///< z center of opFlash
-    float                     width_of_flash_x;      ///< x width of opFlash
-    float                     width_of_flash_y;      ///< y width of opFlash
-    float                     width_of_flash_z;      ///< z width of opFlash
+    float                     width_of_flash_x;       ///< x width of opFlash
+    float                     width_of_flash_y;       ///< y width of opFlash
+    float                     width_of_flash_z;       ///< z width of opFlash
     float                     matchscore;             ///< Matchscore of the single opflash with the qcluster containing all the pfparticles
 
+    //Output needed to compare with FlashMatch segment track method:
+    float                     center_of_flash_x_M;    ///< x Center of opFlash
+    float                     width_of_flash_x_M;     ///< x width of opFlash
+    std::vector<double>       flashhypo_channel_M;    ///< Array with PMT channel of the hypothetical flash made by the flashmatcher (DOUBLE)
+    float                     matchscore_M;           ///< Matchscore of the single opflash with the qcluster containing all the pfparticles
+
     /* FCL VARIABLES */
+    bool                      m_lightpath;
     bool                      m_debug;
     float                     m_startbeamtime;
     float                     m_endbeamtime;
@@ -146,11 +160,16 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
     simphot_channel.resize(m_geo->NOpDets(),0);
     recphot_channel.resize(m_geo->NOpDets(),0);
     flashhypo_channel.resize(m_geo->NOpDets(),0);
+    if(m_lightpath)
+    {
+        flashhypo_channel_M.resize(m_geo->NOpDets(),0);
+    }
 
     //initialize fcl parameters
     m_debug         = p.get<bool> ("DebugMode"          ,false );
-    m_startbeamtime = p.get<float>("FlashVetoTimeStart" ,3.2   );
+    m_startbeamtime = p.get<float>("FlashVetoTimeStart" ,3.1   );
     m_endbeamtime   = p.get<float>("FlashVetoTimeEnd"   ,4.8   );
+    m_lightpath     = p.get<bool> ("LightCharge"        ,false );
 
     m_mgr.Configure(  p.get<flashana::Config_t>("FlashMatchConfig"));
 
@@ -176,20 +195,20 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
 
 
     //Set branches for MC information
-    m_tree->Branch("true_pdg",        &true_pdg,              "true_pdg/s"        );
-    m_tree->Branch("true_energy",     &true_energy,           "true_energy/F"     );
-    m_tree->Branch("true_time",       &true_time,             "true_time/F"       );
-    m_tree->Branch("true_x",          &true_x,                "true_x/F"          );
-    m_tree->Branch("true_y",          &true_y,                "true_y/F"          );
-    m_tree->Branch("true_z",          &true_z,                "true_z/F"          );
-    m_tree->Branch("true_x",          &true_px,                "true_x/F"          );
-    m_tree->Branch("true_y",          &true_py,                "true_y/F"          );
-    m_tree->Branch("true_z",          &true_pz,                "true_z/F"          );
-    m_tree->Branch("true_end_x",      &true_end_x,            "true_end_x/F"      );
-    m_tree->Branch("true_end_y",      &true_end_y,            "true_end_y/F"      );
-    m_tree->Branch("true_end_z",      &true_end_z,            "true_end_z/F"      );
-    m_tree->Branch("simphot_time",    "std::vector<float>",   &simphot_time       );
-    m_tree->Branch("simphot_channel", "std::vector<int>",     &simphot_channel    );
+    m_tree->Branch("true_pdg",        &true_pdg,              "true_pdg/s"                 );
+    m_tree->Branch("true_energy",     &true_energy,           "true_energy/F"              );
+    m_tree->Branch("true_time",       &true_time,             "true_time/F"                );
+    m_tree->Branch("true_x",          &true_x,                "true_x/F"                   );
+    m_tree->Branch("true_y",          &true_y,                "true_y/F"                   );
+    m_tree->Branch("true_z",          &true_z,                "true_z/F"                   );
+    m_tree->Branch("true_x",          &true_px,                "true_x/F"                  );
+    m_tree->Branch("true_y",          &true_py,                "true_y/F"                  );
+    m_tree->Branch("true_z",          &true_pz,                "true_z/F"                  );
+    m_tree->Branch("true_end_x",      &true_end_x,            "true_end_x/F"               );
+    m_tree->Branch("true_end_y",      &true_end_y,            "true_end_y/F"               );
+    m_tree->Branch("true_end_z",      &true_end_z,            "true_end_z/F"               );
+    m_tree->Branch("simphot_time",    "std::vector<float>",   &simphot_time                );
+    m_tree->Branch("simphot_channel", "std::vector<int>",     &simphot_channel             );
 
     //Reconstructed photon information
     m_tree->Branch("recphot_channel",     "std::vector<int>",        &recphot_channel      );
@@ -197,11 +216,19 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
     m_tree->Branch("center_of_flash_x",   &center_of_flash_x,        "center_of_flash_x/F" );
     m_tree->Branch("center_of_flash_y",   &center_of_flash_y,        "center_of_flash_y/F" );
     m_tree->Branch("center_of_flash_z",   &center_of_flash_z,        "center_of_flash_z/F" );
-    m_tree->Branch("width_of_flash_x",   &width_of_flash_x,        "width_of_flash_x/F" );
-    m_tree->Branch("width_of_flash_y",   &width_of_flash_y,        "width_of_flash_y/F" );
-    m_tree->Branch("width_of_flash_z",   &width_of_flash_z,        "width_of_flash_z/F" );
+    m_tree->Branch("width_of_flash_x",    &width_of_flash_x,         "width_of_flash_x/F"  );
+    m_tree->Branch("width_of_flash_y",    &width_of_flash_y,         "width_of_flash_y/F"  );
+    m_tree->Branch("width_of_flash_z",    &width_of_flash_z,         "width_of_flash_z/F"  );
     m_tree->Branch("matchscore",          &matchscore,               "matchscore/F"        );
 
+    //Output needed to compare with FlashMatch segment track method:
+    if(m_lightpath)
+    {
+        m_tree->Branch("flashhypo_channel_M", "std::vector<double>",     &flashhypo_channel_M  );
+        m_tree->Branch("center_of_flash_x_M", &center_of_flash_x_M,     "center_of_flash_x_M/F");
+        m_tree->Branch("width_of_flash_x_M",  &width_of_flash_x_M,       "width_of_flash_x_M/F");
+        m_tree->Branch("matchscore_M",        &matchscore_M,             "matchscore_M/F"      );
+    }
 }
 
 void FitSimPhotons::clearTreeVar()
@@ -243,9 +270,18 @@ void FitSimPhotons::clearTreeVar()
     center_of_flash_x = 0;
     center_of_flash_y = 0;
     center_of_flash_z = 0;
-    width_of_flash_x= 0;
-    width_of_flash_y= 0;
-    width_of_flash_z= 0;
+    width_of_flash_x  = 0;
+    width_of_flash_y  = 0;
+    width_of_flash_z  = 0;
+
+    //Output needed to compare with FlashMatch segment track method:
+    if(m_lightpath)
+    {
+        std::fill(flashhypo_channel_M.begin(), flashhypo_channel_M.end(), 0);
+        matchscore_M        =-1;
+        center_of_flash_x_M = 0;
+        width_of_flash_x_M  = 0;
+    }
 
 }
 

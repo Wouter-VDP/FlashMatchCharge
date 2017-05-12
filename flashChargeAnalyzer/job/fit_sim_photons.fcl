@@ -6,8 +6,9 @@ fit_sim_photons:
 {
 	module_type: "FitSimPhotons"
 	DebugMode:                false
+	LightPath:                true
 
-	FlashVetoTimeStart:       3.2
+	FlashVetoTimeStart:       3.1
   	FlashVetoTimeEnd:         4.8
 
 	FlashMatchConfig: @local::flashmatch_config

@@ -31,17 +31,33 @@ void FitSimPhotons::fillTree(art::Event const & e)
     true_end_y  = mcparticle_handle->at(0).EndY();
     true_end_z  = mcparticle_handle->at(0).EndZ();
 
+    // If the particle is a shower, the end point will not be accurate.
+    if(true_pdg==22 || true_pdg ==11)
+    {
+        auto const& mcshower_handle = e.getValidHandle< std::vector< sim::MCShower > >( "mcreco" );
+        // Check here if they really correspond by looking at the deposited energy and start x,y,z and maybe even momentum direction.
+        true_end_x  = mcshower_handle->at(0).End().X();
+        true_end_y  = mcshower_handle->at(0).End().Y();
+        true_end_z  = mcshower_handle->at(0).End().Z();
+    }
+
     std::cout<<"\n Begin filling variables of (run,subrun,event) \t ("<< run <<"," <<subrun <<"," <<event<< ") Particle energy: "<< true_energy << "GeV, Time:" << true_time << "?" << std::endl;
 
     calculateChargeCenter(e);                                 // Fill q_z_sps and center_of_charge
     fillPandoraTree(e);                                       // Fill PandoraNu information
     ::flashana::Flash_t flashReco = fillOticalTree(e);        // Fill optical information
-    
+
     if(flashReco.pe_v.size()==m_geo->NOpDets())
     {
-        flashana::Flash_t flashHypo = makeMatch(e,flashReco);
-        flashhypo_channel = flashHypo.pe_v;                   // Fill the resonstructed hypothetical flash corresponding to all pfps
-        flashhypo_time    = flashHypo.time;
+        if(m_lightpath)
+        {
+            ::flashana::Flash_t flashRecoCopy = flashReco;            // Needed because the flash gets moved in the manager
+            trackSegMatch(e,flashRecoCopy);                           // Fill the flashmatching on lightpath based metrics
+        }
+        flashana::Flash_t flashHypo       = makeMatch(e,flashReco);
+        flashhypo_channel                 = flashHypo.pe_v;       // Fill the resonstructed hypothetical flash corresponding to all pfps
+        flashhypo_time                    = flashHypo.time;
+
     }
     else
     {
@@ -267,12 +283,12 @@ flashana::Flash_t FitSimPhotons::makeMatch(art::Event const & e, flashana::Flash
 
         if(m_result.size()!=1)
         {
-            std::cout << "Something must be wrong, flash result has size " << m_result.size() <<std::endl;
+            std::cout << "Something must be wrong, flash matching charge result has size " << m_result.size() <<std::endl;
         }
         else
         {
             center_of_flash_x = m_result[0].tpc_point.x;
-            width_of_flash_x = m_result[0].tpc_point_err.x;
+            width_of_flash_x  = m_result[0].tpc_point_err.x;
             matchscore        = m_result[0].score;
         }
     }
@@ -283,6 +299,54 @@ flashana::Flash_t FitSimPhotons::makeMatch(art::Event const & e, flashana::Flash
     return flashHypo;
 }
 
+
+void FitSimPhotons::trackSegMatch(art::Event const & e, flashana::Flash_t & flashReco)
+{
+    auto const& track_handle = e.getValidHandle< std::vector< recob::Track > >( "pandoraNu" );
+    flashana::QCluster_t summed_qcluster;
+    summed_qcluster.clear();
+    summed_qcluster += GetQCluster(*track_handle);
+
+    flashana::Flash_t flashHypo;
+    flashHypo.pe_v.resize(32);
+    ((flashana::PhotonLibHypothesis*)(m_mgr.GetAlgo(flashana::kFlashHypothesis)))->FillEstimate(summed_qcluster,flashHypo);
+    double hyposum=0;
+    double recosum=0;
+
+    for (unsigned int ipmt = 0; ipmt < m_geo->NOpDets(); ipmt++)
+    {
+        hyposum+=flashHypo.pe_v[ipmt];
+        recosum+=flashReco.pe_v[ipmt];
+        if(m_debug)
+        {
+            std::cout << "for pmt " <<  ipmt << ", hypoPE_M: " << flashHypo.pe_v[ipmt] << ", recoPE: " << flashReco.pe_v[ipmt] << std::endl;
+        }
+    }
+
+    if(hyposum>0.01 && recosum>0.01)
+    {
+        m_mgr.Reset();
+        m_mgr.Emplace(std::move(flashReco));
+        m_mgr.Emplace(std::move(summed_qcluster));
+        m_result = m_mgr.Match();
+
+        if(m_result.size()!=1)
+        {
+            std::cout << "Something must be wrong, flash matching segment result has size " << m_result.size() <<std::endl;
+        }
+        else
+        {
+            flashhypo_channel_M = flashHypo.pe_v;
+            center_of_flash_x_M = m_result[0].tpc_point.x;
+            width_of_flash_x_M  = m_result[0].tpc_point_err.x;
+            matchscore_M        = m_result[0].score;
+        }
+    }
+    else
+    {
+        std::cout << "Something must be wrong,the flash hypothesis or the OpFlash was 0!" <<std::endl;
+    }
+}
 
 // Method to calculate the total the center for a parent particle (index of neutrino pfp)
 void FitSimPhotons::calculateChargeCenter(const art::Event & e)
@@ -350,5 +414,35 @@ void FitSimPhotons::calculateChargeCenter(const art::Event & e)
     center_of_charge_z =chargecenter[2];
 }
 
-DEFINE_ART_MODULE(FitSimPhotons)
 
+flashana::QCluster_t FitSimPhotons::GetQCluster(const std::vector<recob::Track> track_v)
+{
+
+    flashana::QCluster_t summed_qcluster;
+    summed_qcluster.clear();
+
+    for (unsigned int itr = 0; itr < track_v.size(); itr++)
+    {
+
+        recob::Track trk = track_v.at(itr);
+
+        ::geoalgo::Trajectory track_geotrj;
+        track_geotrj.resize(trk.NumberTrajectoryPoints(),::geoalgo::Vector(0.,0.,0.));
+
+        for (size_t pt_idx=0; pt_idx < trk.NumberTrajectoryPoints(); ++pt_idx)
+        {
+            auto const& pt = trk.LocationAtPoint(pt_idx);
+            track_geotrj[pt_idx][0] = pt[0];
+            track_geotrj[pt_idx][1] = pt[1];
+            track_geotrj[pt_idx][2] = pt[2];
+        }
+
+        auto qcluster = ((flashana::LightPath*)(m_mgr.GetCustomAlgo("LightPath")))->FlashHypothesis(track_geotrj);
+        summed_qcluster += qcluster;
+
+    } // track loop
+
+    return summed_qcluster;
+}
+
+DEFINE_ART_MODULE(FitSimPhotons)
