@@ -146,7 +146,7 @@ private:
     float                     matchscore_M;           ///< Matchscore of the single opflash with the qcluster containing all the pfparticles
 
     /* FCL VARIABLES */
-    bool                      m_lightpath;
+    bool                      m_lightpath;            ///< Currently an fcl parameter but gets overwritten in code, true for tracklike, false for shower
     bool                      m_debug;
     float                     m_startbeamtime;
     float                     m_endbeamtime;

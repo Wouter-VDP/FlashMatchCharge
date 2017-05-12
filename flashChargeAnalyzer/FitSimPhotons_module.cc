@@ -34,11 +34,15 @@ void FitSimPhotons::fillTree(art::Event const & e)
     // If the particle is a shower, the end point will not be accurate.
     if(true_pdg==22 || true_pdg ==11)
     {
+        m_lightpath=false; //force the lightpath to not run if showerlike
         auto const& mcshower_handle = e.getValidHandle< std::vector< sim::MCShower > >( "mcreco" );
         // Check here if they really correspond by looking at the deposited energy and start x,y,z and maybe even momentum direction.
         true_end_x  = mcshower_handle->at(0).End().X();
         true_end_y  = mcshower_handle->at(0).End().Y();
         true_end_z  = mcshower_handle->at(0).End().Z();
+    }
+    else{
+        m_lightpath=true; //Force the algo to run if shower
     }
 
     std::cout<<"\n Begin filling variables of (run,subrun,event) \t ("<< run <<"," <<subrun <<"," <<event<< ") Particle energy: "<< true_energy << "GeV, Time:" << true_time << "?" << std::endl;
