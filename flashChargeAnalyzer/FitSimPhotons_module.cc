@@ -1,3 +1,14 @@
+//###################################
+//######### TO DO LIST ##############
+//# 
+//# 1. I soon want to sun this over single neutrinos, do I need to save something else? Interaction type maybe
+//# 2. Flashmatcher returns the minimum x position. This is important, safe the minx in the spacepont!
+//#    This means that all my plots which use flash x position need to be remaked! Be careful with onePDG=true
+//# 3. If you can, change endpoint to endpoint in tpc active or add that one. 
+//###################################
+
+
+
 #include "FitSimPhotons_module.h"
 
 void FitSimPhotons::analyze(art::Event const & e)
@@ -5,6 +16,7 @@ void FitSimPhotons::analyze(art::Event const & e)
     //try {
     fillTree(e);
     //} catch(...) {std::cerr<<"Something went wrong filling root tree"<<std::endl;}
+    std::cout<< "min_x_sps: "<< min_x_sps << "\ttrue_x: "<< true_x << "\ttrue_end_x: " << true_end_x << "\tcenter_of_charge_x: " << center_of_charge_x << std::endl;
     return;
 }
 
@@ -373,7 +385,7 @@ void FitSimPhotons::calculateChargeCenter(const art::Event & e)
     chargecenter.resize(3);
 
     // Loop over the pfparticles, get their space points, and compute the weighted average:
-
+    min_x_sps=10000.; //random big value that will be overwritten
     for (size_t pfpindex =0; pfpindex < pfparticle_handle->size() ; ++pfpindex )
     {
 
@@ -384,6 +396,11 @@ void FitSimPhotons::calculateChargeCenter(const art::Event & e)
         for (auto & _sps : spcpnts)
         {
             auto xyz = _sps->XYZ();
+            if(xyz[0]>0 && xyz[0]<min_x_sps)
+            {
+                min_x_sps=xyz[0];
+            }
+
             std::vector<art::Ptr<recob::Hit> > hits = hits_per_spcpnts.at(_sps.key());
             // Add the hits to the weighted average, if they are collection hits:
             for (auto & hit : hits)
