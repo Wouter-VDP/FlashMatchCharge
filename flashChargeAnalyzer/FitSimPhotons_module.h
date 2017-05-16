@@ -77,19 +77,19 @@ private:
 
     flashana::QCluster_t collect3DHitsZ( 	size_t pfindex,
                                             const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
-                                            art::Event const & e);
+                                            art::Event const & e,
+                                            float shwrtrckly);
 
-    flashana::Flash_t makeMatch(art::Event const & e, flashana::Flash_t & flashReco);
+    flashana::Flash_t makeMatch  (art::Event const & e, flashana::Flash_t & flashReco);
+    void makeMatchNu(art::Event const & e, flashana::Flash_t & flashReco);
 
     void trackSegMatch(art::Event const & e, flashana::Flash_t & flashReco);
 
     flashana::QCluster_t GetQCluster(const std::vector<recob::Track> track_v);
 
 
-
-
-
     //Variables
+    float                               m_shwrtrckly= 0.7441;  //relative coeficient of charge light for showerlike particles
     std::vector<flashana::FlashMatch_t> m_result;
     ::flashana::FlashMatchManager       m_mgr;
     art::ServiceHandle<geo::Geometry>   m_geo;
@@ -144,6 +144,12 @@ private:
     float                     width_of_flash_x_M;     ///< x width of opFlash
     std::vector<double>       flashhypo_channel_M;    ///< Array with PMT channel of the hypothetical flash made by the flashmatcher (DOUBLE)
     float                     matchscore_M;           ///< Matchscore of the single opflash with the qcluster containing all the pfparticles
+
+    //Output needed to compare with Showr/Track relative light yield for neutrinos:
+    float                     center_of_flash_x_Nu;    ///< x Center of opFlash
+    float                     width_of_flash_x_Nu;     ///< x width of opFlash
+    std::vector<double>       flashhypo_channel_Nu;    ///< Array with PMT channel of the hypothetical flash made by the flashmatcher (DOUBLE)
+    float                     matchscore_Nu;           ///< Matchscore of the single opflash with the qcluster containing all the pfparticles
 
     /* FCL VARIABLES */
     bool                      m_lightpath;            ///< Currently an fcl parameter but gets overwritten in code, true for tracklike, false for shower
@@ -223,6 +229,12 @@ FitSimPhotons::FitSimPhotons(fhicl::ParameterSet const & p):EDAnalyzer(p)
     m_tree->Branch("width_of_flash_x_M",  &width_of_flash_x_M,       "width_of_flash_x_M/F");
     m_tree->Branch("matchscore_M",        &matchscore_M,             "matchscore_M/F"      );
 
+    //Output needed to compare with Showr/Track relative light yield for neutrinos:
+    m_tree->Branch("flashhypo_channel_Nu", "std::vector<double>",     &flashhypo_channel_Nu  );
+    m_tree->Branch("center_of_flash_x_Nu", &center_of_flash_x_Nu,     "center_of_flash_x_Nu/F");
+    m_tree->Branch("width_of_flash_x_Nu",  &width_of_flash_x_Nu,       "width_of_flash_x_Nu/F");
+    m_tree->Branch("matchscore_Nu",        &matchscore_Nu,             "matchscore_Nu/F"      );
+
 }
 
 void FitSimPhotons::clearTreeVar()
@@ -274,6 +286,12 @@ void FitSimPhotons::clearTreeVar()
     matchscore_M        =-1;
     center_of_flash_x_M = 0;
     width_of_flash_x_M  = 0;
+
+    //Output needed to compare with Showr/Track relative light yield for neutrinos:
+    std::fill(flashhypo_channel_Nu.begin(), flashhypo_channel_Nu.end(), 0);
+    matchscore_Nu        =-1;
+    center_of_flash_x_Nu = 0;
+    width_of_flash_x_Nu  = 0;
 
 }
 

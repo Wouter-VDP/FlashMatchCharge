@@ -29,32 +29,58 @@ void FitSimPhotons::fillTree(art::Event const & e)
     subrun = e.subRun();
     event  = e.event();
 
-    auto const& mcparticle_handle = e.getValidHandle< std::vector< simb::MCParticle > >( "largeant" );
-    true_pdg    = mcparticle_handle->at(0).PdgCode();
-    true_energy = mcparticle_handle->at(0).E();
-    true_time   = mcparticle_handle->at(0).T();
-    true_x      = mcparticle_handle->at(0).Vx();
-    true_y      = mcparticle_handle->at(0).Vy();
-    true_z      = mcparticle_handle->at(0).Vz();
-    true_px     = mcparticle_handle->at(0).Px();
-    true_py     = mcparticle_handle->at(0).Py();
-    true_pz     = mcparticle_handle->at(0).Pz();
-    true_end_x  = mcparticle_handle->at(0).EndX();
-    true_end_y  = mcparticle_handle->at(0).EndY();
-    true_end_z  = mcparticle_handle->at(0).EndZ();
-
-    // If the particle is a shower, the end point will not be accurate.
-    if(true_pdg==22 || true_pdg ==11)
+    auto const& truth_handle = e.getValidHandle< std::vector< simb::MCTruth > >( "generator" );
+    if (truth_handle->size() > 0)
     {
-        m_lightpath=false; //force the lightpath to not run if showerlike
-        auto const& mcshower_handle = e.getValidHandle< std::vector< sim::MCShower > >( "mcreco" );
-        // Check here if they really correspond by looking at the deposited energy and start x,y,z and maybe even momentum direction.
-        true_end_x  = mcshower_handle->at(0).End().X();
-        true_end_y  = mcshower_handle->at(0).End().Y();
-        true_end_z  = mcshower_handle->at(0).End().Z();
-    }
-    else{
-        m_lightpath=true; //Force the algo to run if shower
+        if (truth_handle->at(0).NeutrinoSet())
+        {
+            std::cout << "This is a neutrino event!" << std::endl;
+            m_lightpath=true;    // LightPath method should just skip the showerlike pfps.
+            simb::MCNeutrino const& neutrino = truth_handle->at(0).GetNeutrino();
+
+            true_pdg    = neutrino.Nu().PdgCode();
+            true_energy = neutrino.Nu().E();
+            true_x      = neutrino.Nu().Vx();
+            true_y      = neutrino.Nu().Vy();
+            true_z      = neutrino.Nu().Vz();
+            true_px     = 0;
+            true_py     = 0;
+            true_pz     = 1;              //The direction is along z
+            true_end_x  = true_x;         //This is wrong of course but makes sure that containment tests do not fail
+            true_end_y  = true_y;
+            true_end_z  = true_z;
+
+        } //neutrino
+        else{
+            std::cout << "No neutrinos in event!" << std::endl;
+            auto const& mcparticle_handle = e.getValidHandle< std::vector< simb::MCParticle > >( "largeant" );
+                true_pdg    = mcparticle_handle->at(0).PdgCode();
+                true_energy = mcparticle_handle->at(0).E();
+                true_time   = mcparticle_handle->at(0).T();
+                true_x      = mcparticle_handle->at(0).Vx();
+                true_y      = mcparticle_handle->at(0).Vy();
+                true_z      = mcparticle_handle->at(0).Vz();
+                true_px     = mcparticle_handle->at(0).Px();
+                true_py     = mcparticle_handle->at(0).Py();
+                true_pz     = mcparticle_handle->at(0).Pz();
+                if(true_pdg==22 || true_pdg ==11)
+                {
+                    m_lightpath=false; //force the lightpath to not run if showerlike
+                    auto const& mcshower_handle = e.getValidHandle< std::vector< sim::MCShower > >( "mcreco" );
+                    // Check here if they really correspond by looking at the deposited energy and start x,y,z and maybe even momentum direction.
+                    true_end_x  = mcshower_handle->at(0).End().X();
+                    true_end_y  = mcshower_handle->at(0).End().Y();
+                    true_end_z  = mcshower_handle->at(0).End().Z();
+                } //Showerlike
+                else if(true_pdg==2212 || true_pdg ==13)
+                {
+                    m_lightpath=true; //Force the algo to run if shower
+                    true_end_x  = mcparticle_handle->at(0).EndX();
+                    true_end_y  = mcparticle_handle->at(0).EndY();
+                    true_end_z  = mcparticle_handle->at(0).EndZ();
+                } //Tracklike
+
+        } // something else
     }
 
     std::cout<<"\n Begin filling variables of (run,subrun,event) \t ("<< run <<"," <<subrun <<"," <<event<< ") Particle energy: "<< true_energy << "GeV, Time:" << true_time << "?" << std::endl;
@@ -70,6 +96,12 @@ void FitSimPhotons::fillTree(art::Event const & e)
             ::flashana::Flash_t flashRecoCopy = flashReco;            // Needed because the flash gets moved in the manager
             trackSegMatch(e,flashRecoCopy);                           // Fill the flashmatching on lightpath based metrics
         }
+        if(true_pdg==12 || true_pdg==14)
+        {
+            ::flashana::Flash_t flashRecoCopy2 = flashReco;
+            makeMatchNu(e,flashRecoCopy2);
+        }
+
         flashana::Flash_t flashHypo       = makeMatch(e,flashReco);
         flashhypo_channel                 = flashHypo.pe_v;       // Fill the resonstructed hypothetical flash corresponding to all pfps
         flashhypo_time                    = flashHypo.time;
@@ -215,14 +247,24 @@ flashana::Flash_t FitSimPhotons::fillOticalTree(art::Event const & e)
 
 flashana::QCluster_t FitSimPhotons::collect3DHitsZ( size_t pfindex,
         const art::ValidHandle<std::vector<recob::PFParticle> > pfparticles,
-        art::Event const & e)
+        art::Event const & e,
+        float shwrtrckly)
 {
+
     if(m_debug)
     {
         std::cout << "Collecting hits information " << std::endl;
     }
 
+    int pdgcode = pfparticles->at(pfindex).PdgCode ();
+    double lycoef=1.;
+    if(pdgcode==11)  // Multiply showerlike paricle with a relative factor
+    {
+        lycoef = shwrtrckly;
+    }
+
     std::vector<flashana::Hit3D_t> hitlist;
+
 
     auto const& spacepoint_handle = e.getValidHandle<std::vector<recob::SpacePoint>>("pandoraNu");
     art::FindManyP<recob::SpacePoint > spcpnts_per_pfpart   ( pfparticles,       e, "pandoraNu" );
@@ -246,7 +288,7 @@ flashana::QCluster_t FitSimPhotons::collect3DHitsZ( size_t pfindex,
                 hit3D.y = xyz[1];
                 hit3D.z = xyz[2];
                 hit3D.plane =  2;
-                hit3D.q = hit->Integral();
+                hit3D.q = hit->Integral()*lycoef;
 
                 hitlist.emplace_back(hit3D);
             }
@@ -270,7 +312,7 @@ flashana::Flash_t FitSimPhotons::makeMatch(art::Event const & e, flashana::Flash
 
     for (size_t pfpindex =0; pfpindex < pfparticle_handle->size() ; ++pfpindex )
     {
-        summed_qcluster += collect3DHitsZ(pfpindex, pfparticle_handle, e);
+        summed_qcluster += collect3DHitsZ(pfpindex, pfparticle_handle, e, 1); //Pass one in any case flas charge to light for everyone
     }
 
     flashana::Flash_t flashHypo;
@@ -316,12 +358,16 @@ flashana::Flash_t FitSimPhotons::makeMatch(art::Event const & e, flashana::Flash
 }
 
 
-void FitSimPhotons::trackSegMatch(art::Event const & e, flashana::Flash_t & flashReco)
+void FitSimPhotons::makeMatchNu(art::Event const & e, flashana::Flash_t & flashReco)
 {
-    auto const& track_handle = e.getValidHandle< std::vector< recob::Track > >( "pandoraNu" );
+    auto const& pfparticle_handle = e.getValidHandle< std::vector< recob::PFParticle > >( "pandoraNu" );
     flashana::QCluster_t summed_qcluster;
     summed_qcluster.clear();
-    summed_qcluster += GetQCluster(*track_handle);
+
+    for (size_t pfpindex =0; pfpindex < pfparticle_handle->size() ; ++pfpindex )
+    {
+        summed_qcluster += collect3DHitsZ(pfpindex, pfparticle_handle, e, m_shwrtrckly); //Pass one in any case flas charge to light for everyone
+    }
 
     flashana::Flash_t flashHypo;
     flashHypo.pe_v.resize(32);
@@ -352,16 +398,68 @@ void FitSimPhotons::trackSegMatch(art::Event const & e, flashana::Flash_t & flas
         }
         else
         {
-            flashhypo_channel_M = flashHypo.pe_v;
-            center_of_flash_x_M = m_result[0].tpc_point.x;
-            width_of_flash_x_M  = m_result[0].tpc_point_err.x;
-            matchscore_M        = m_result[0].score;
+            flashhypo_channel_Nu = flashHypo.pe_v;
+            center_of_flash_x_Nu = m_result[0].tpc_point.x;
+            width_of_flash_x_Nu  = m_result[0].tpc_point_err.x;
+            matchscore_Nu        = m_result[0].score;
         }
     }
     else
     {
         std::cout << "Something must be wrong,the flash hypothesis or the OpFlash was 0!" <<std::endl;
-    }
+    }    
+}
+
+
+void FitSimPhotons::trackSegMatch(art::Event const & e, flashana::Flash_t & flashReco)
+{
+    auto const& track_handle = e.getValidHandle< std::vector< recob::Track > >( "pandoraNu" );
+    if(track_handle->size()>0)  //Otherwise skip the event, score will remain zero
+    {
+        flashana::QCluster_t summed_qcluster;
+        summed_qcluster.clear();
+        summed_qcluster += GetQCluster(*track_handle);
+
+        flashana::Flash_t flashHypo;
+        flashHypo.pe_v.resize(32);
+        ((flashana::PhotonLibHypothesis*)(m_mgr.GetAlgo(flashana::kFlashHypothesis)))->FillEstimate(summed_qcluster,flashHypo);
+        double hyposum=0;
+        double recosum=0;
+
+        for (unsigned int ipmt = 0; ipmt < m_geo->NOpDets(); ipmt++)
+        {
+            hyposum+=flashHypo.pe_v[ipmt];
+            recosum+=flashReco.pe_v[ipmt];
+            if(m_debug)
+            {
+                std::cout << "for pmt " <<  ipmt << ", hypoPE_M: " << flashHypo.pe_v[ipmt] << ", recoPE: " << flashReco.pe_v[ipmt] << std::endl;
+            }
+        }
+
+        if(hyposum>0.01 && recosum>0.01)
+        {
+            m_mgr.Reset();
+            m_mgr.Emplace(std::move(flashReco));
+            m_mgr.Emplace(std::move(summed_qcluster));
+            m_result = m_mgr.Match();
+
+            if(m_result.size()!=1)
+            {
+                std::cout << "Something must be wrong, flash matching segment result has size " << m_result.size() <<std::endl;
+            }
+            else
+            {
+                flashhypo_channel_M = flashHypo.pe_v;
+                center_of_flash_x_M = m_result[0].tpc_point.x;
+                width_of_flash_x_M  = m_result[0].tpc_point_err.x;
+                matchscore_M        = m_result[0].score;
+            }
+        }
+        else
+        {
+            std::cout << "Something must be wrong,the flash hypothesis or the OpFlash was 0!" <<std::endl;
+        }   
+    } 
 }
 
 // Method to calculate the total the center for a parent particle (index of neutrino pfp)
