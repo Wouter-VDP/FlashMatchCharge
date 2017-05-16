@@ -40,6 +40,7 @@ void FitSimPhotons::fillTree(art::Event const & e)
 
             true_pdg    = neutrino.Nu().PdgCode();
             true_energy = neutrino.Nu().E();
+            true_time   = neutrino.Nu().T();
             true_x      = neutrino.Nu().Vx();
             true_y      = neutrino.Nu().Vy();
             true_z      = neutrino.Nu().Vz();
