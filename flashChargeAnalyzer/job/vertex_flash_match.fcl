@@ -1,0 +1,23 @@
+#include "flashmatchalg.fcl"
+
+BEGIN_PROLOG
+
+vertex_flash_match: 
+{
+	module_type: "FitSimPhotons"
+
+	FlashVetoTimeStart:       3.2
+  	FlashVetoTimeEnd:         4.8
+
+	FlashMatchConfig: @local::flashmatch_config
+}
+
+# Re-use flash
+vertex_flash_match.FlashMatchConfig.FlashMatchManager.AllowReuseFlash: true
+vertex_flash_match.FlashMatchConfig.FlashMatchManager.Verbosity: 3
+# Add Charge algorithm
+vertex_flash_match.FlashMatchConfig.FlashMatchManager.CustomAlgo:      ["LightPath","LightCharge"]
+# Normalise as long as we dont know the exact conversion 
+vertex_flash_match.FlashMatchConfig.QLLMatch.NormalizeHypothesis: true
+
+END_PROLOG
