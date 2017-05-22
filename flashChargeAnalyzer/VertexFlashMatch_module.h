@@ -233,7 +233,6 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const & p):EDAnalyzer(p)
     m_tree->Branch("center_of_flash_z",   &center_of_flash_z,        "center_of_flash_z/D"   );
     m_tree->Branch("width_of_flash_y",    &width_of_flash_y,         "width_of_flash_y/D"    );
     m_tree->Branch("width_of_flash_z",    &width_of_flash_z,         "width_of_flash_z/D"    );
-    m_tree->Branch("matchscore",          &matchscore,               "matchscore/D"          );
     m_tree->Branch("tpc_id",              "std::vector<Short_t>",     &tpc_id                );
 
     //Set branches for PandoraNU information
