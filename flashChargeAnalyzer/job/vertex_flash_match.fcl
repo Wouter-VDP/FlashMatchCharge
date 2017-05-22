@@ -4,7 +4,7 @@ BEGIN_PROLOG
 
 vertex_flash_match: 
 {
-	module_type: "FitSimPhotons"
+	module_type: "VertexFlashMatch"
 
 	FlashVetoTimeStart:       3.2
   	FlashVetoTimeEnd:         4.8

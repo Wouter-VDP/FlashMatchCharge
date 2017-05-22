@@ -1,8 +1,8 @@
 #include "services_microboone.fcl"
 #include "detectorclocks_microboone.fcl"
-#include "fit_sim_photons.fcl"
+#include "vertex_flash_match.fcl"
 
-process_name : FitSimPhotons      #The process name must NOT contain any underscores
+process_name : VertexFlashMatch      #The process name must NOT contain any underscores
 
 source : {
   module_type : RootInput
@@ -12,7 +12,7 @@ source : {
 services :
 {
   scheduler:                { defaultExceptions: false }    # Make all uncaught exceptions fatal.
-  TFileService:             { fileName: "FitSimPhotons.root" }
+  TFileService:             { fileName: "VertexFlashMatch.root" }
   TimeTracker:              {}
   RandomNumberGenerator:    {}
   Geometry:                       @local::microboone_geo
@@ -23,7 +23,7 @@ services :
 outputs: {
   optionalout: { 
     module_type: RootOutput
-    fileName: "output_file_FitSimPhotons.root"
+    fileName: "output_file_VertexFlashMatch.root"
     fastCloning: false 
   }
 }
@@ -36,7 +36,7 @@ physics: {
   }
   analyzers: {
      # ParameterSets for zero or more analyzer modules
-     myana:  @local::fit_sim_photons
+     myana:  @local::vertex_flash_match
   }
 
   filters : {

@@ -1,14 +1,3 @@
-//###################################
-//######### TO DO LIST ##############
-//# 
-//# 1. I soon want to sun this over single neutrinos, do I need to save something else? Interaction type maybe
-//# 2. Flashmatcher returns the minimum x position. This is important, safe the minx in the spacepont!
-//#    This means that all my plots which use flash x position need to be remaked! Be careful with onePDG=true
-//# 3. If you can, change endpoint to endpoint in tpc active or add that one. 
-//###################################
-
-
-
 #include "FitSimPhotons_module.h"
 
 void FitSimPhotons::analyze(art::Event const & e)
