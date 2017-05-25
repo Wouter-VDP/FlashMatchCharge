@@ -1,0 +1,41 @@
+<project name="bnb_nue_cosmic_pandora_electron_flashMatch">
+    <!--  Project size  -->
+    <numevents>60000</numevents>
+
+    <!--  Operating System  -->
+    <os>SL6</os>
+
+    <!--  Batch resources  -->
+    <resource>DEDICATED,OPPORTUNISTIC,OFFSITE</resource>
+
+
+    <!--  Larsoft information  -->
+    <larsoft>
+        <tag>v06_26_01</tag>
+        <qual>e10:prof</qual>
+        <local>/pnfs/uboone/scratch/users/cadams/submission/flashmatch/localProducts_larsoft_v06_26_01_e10_prof.tar</local>
+    </larsoft>
+    
+    <!--  Project stages  -->
+    <stage name="flashMatch">
+        <fcl>run_vertex_flash_match.fcl</fcl>
+        <outdir>/pnfs/uboone/scratch/users/cadams/v06_26_01/flashMatch/bnb_nue_cosmic_pandora_electron_flashMatch</outdir>
+        <logdir>/pnfs/uboone/scratch/users/cadams/v06_26_01/flashMatch/bnb_nue_cosmic_pandora_electron_flashMatch</logdir>
+        <workdir>/pnfs/uboone/scratch/users/cadams/work/v06_26_01/flashMatch/bnb_nue_cosmic_pandora_electron_flashMatch</workdir>
+        <inputdef>prodgenie_bnb_intrinsic_nue_cosmic_uboone_mcc8_reco2</inputdef>
+        <!-- <output> -->
+            <!-- bnb_nu_cosmic_pandora_electron_flashMatch${PROCESS}_%tc_gen.root -->
+        <!-- </output> -->
+        <numjobs>6</numjobs>
+        <disk>50GB</disk>
+        <maxfilesperjob>2</maxfilesperjob>
+        <datatier>flashMatched</datatier>
+        <!-- <defname>prodgenie_bnb_intrinsic_nue_uboone_mcc8_detsim</defname> -->
+        <memory>2000</memory>
+        <jobsub>--expected-lifetime=8h</jobsub>
+    </stage>
+    <!--  file type  -->
+    <!-- <filetype>mc</filetype> -->
+    <!--  run type  -->
+    <!-- <runtype>physics</runtype> -->
+</project>

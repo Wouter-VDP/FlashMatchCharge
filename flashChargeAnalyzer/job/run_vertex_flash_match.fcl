@@ -24,7 +24,8 @@ outputs: {
   optionalout: { 
     module_type: RootOutput
     fileName: "output_file_VertexFlashMatch.root"
-    fastCloning: false 
+    fastCloning: false     
+    dataTier: "reconstructed"
   }
 }
 
