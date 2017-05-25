@@ -258,9 +258,9 @@ void FlashChargeAna::fillTruthTree(art::Event const & e)
         nuvtxy_truth.emplace_back(vy);
         nuvtxz_truth.emplace_back(vz);
 
-        nuvtxx_sc.emplace_back(vx-SCE.GetPosOffsets(vx, vy, vz)[0]+0.7);
-        nuvtxy_sc.emplace_back(vy+SCE.GetPosOffsets(vx, vy, vz)[1]);
-        nuvtxz_sc.emplace_back(vz+SCE.GetPosOffsets(vx, vy, vz)[2]);
+        nuvtxx_sc.emplace_back(vx-SCE->GetPosOffsets(vx, vy, vz)[0]+0.7);
+        nuvtxy_sc.emplace_back(vy+SCE->GetPosOffsets(vx, vy, vz)[1]);
+        nuvtxz_sc.emplace_back(vz+SCE->GetPosOffsets(vx, vy, vz)[2]);
       }
     }
   }

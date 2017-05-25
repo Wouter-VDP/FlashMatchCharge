@@ -59,6 +59,7 @@ class flashcharge::FlashChargeAna : public art::EDAnalyzer {
 public:
 
   explicit FlashChargeAna(fhicl::ParameterSet const & pset);
+  ~FlashChargeAna();
 
   void reconfigure(fhicl::ParameterSet const & pset);
   // Plugins should not be copied or assigned.
@@ -94,7 +95,7 @@ private:
                         const art::Event & evt);
 
   // variables
-  SpaceChargeMicroBooNE SCE = SpaceChargeMicroBooNE("SCEoffsets_MicroBooNE_E273.root");
+  SpaceChargeMicroBooNE * SCE;
 
   //::flashana::FlashMatchManager  _mgr;
 
@@ -197,11 +198,24 @@ void flashcharge::FlashChargeAna::reconfigure(fhicl::ParameterSet const & pset)
   m_nrPMT                    = pset.get<int>   ("nrPMT", 32);
 }
 
+flashcharge::FlashChargeAna::~FlashChargeAna(){
+
+  if (SCE){
+    delete SCE;
+  }
+
+}
+
 flashcharge::FlashChargeAna::FlashChargeAna(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)  // ,
  // More initializers here.
 {
+
+  // Initialize the SCE module: 
+  std::string _env = std::getenv("UBOONE_DATA_DIR");
+  _env = _env + "/SpaceCharge/SCEoffsets_MicroBooNE_E273.root";
+  SCE = new SpaceChargeMicroBooNE(_env);
 
   //_mgr.Configure(pset.get<flashana::Config_t>("FlashMatchConfig"));
 
