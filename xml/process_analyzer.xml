@@ -1,6 +1,6 @@
 <project name="bnb_nue_cosmic_pandora_electron_flashMatch">
     <!--  Project size  -->
-    <numevents>100000</numevents>
+    <numevents>30000</numevents>
 
     <!--  Operating System  -->
     <os>SL6</os>
@@ -17,25 +17,20 @@
     </larsoft>
     
     <!--  Project stages  -->
-    <stage name="flashMatchcosmics">
+    <stage name="flashMatchelectron">
         <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_26_01/flashMatch/bnb_nue_cosmic_pandora_electron_flashMatch</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_26_01/flashMatch/bnb_nue_cosmic_pandora_electron_flashMatch</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_26_01/flashMatch/bnb_nue_cosmic_pandora_electron_flashMatch</workdir>
-        <inputdef>prodgenie_bnb_nu_cosmic_uboone_mcc8_reco2</inputdef>
+        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_36/flashMatch/electrons</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_36/flashMatch/electrons</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_36/electrons</workdir>
+        <inputlist>/uboone/app/users/wvdp/Generation/Singles_6_36/Electrons/electronsample.vdp</inputlist>
         <!-- <output> -->
             <!-- bnb_nu_cosmic_pandora_electron_flashMatch${PROCESS}_%tc_gen.root -->
         <!-- </output> -->
-        <numjobs>450</numjobs>
-        <maxfilesperjob>5</maxfilesperjob>
+        <numjobs>350</numjobs>
+        <maxfilesperjob>2</maxfilesperjob>
         <datatier>flashMatched</datatier>
-        <!-- <defname>prodgenie_bnb_intrinsic_nue_uboone_mcc8_detsim</defname> -->
-        <disk>68GB</disk>disk>
         <memory>2000</memory>
         <jobsub>--expected-lifetime=8h</jobsub>
     </stage>
-    <!--  file type  -->
-    <!-- <filetype>mc</filetype> -->
-    <!--  run type  -->
-    <!-- <runtype>physics</runtype> -->
+
 </project>

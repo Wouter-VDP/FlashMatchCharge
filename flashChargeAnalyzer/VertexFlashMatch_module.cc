@@ -59,6 +59,9 @@ void VertexFlashMatch::fillTrueTree(art::Event const & e)
             std::cout << "This is a neutrino event!" << std::endl;
             mcpart = truth_handle->at(0).GetNeutrino().Nu();
 
+            true_ccnc = truth_handle->at(0).GetNeutrino().CCNC();
+            true_mode = truth_handle->at(0).GetNeutrino().Mode();
+
         } //neutrino
         else
         {
@@ -126,6 +129,24 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
 
         std::vector<size_t> unordered_daugthers;
         traversePFParticleTree(pfpindex,unordered_daugthers,pfparticle_handle); 
+
+        //Fill nr_trck and nr_shwr
+        Short_t nr_trck_temp=0;
+        Short_t nr_shwr_temp=0;
+        for(auto childi : unordered_daugthers)
+        {
+            Short_t pdgcode = pfparticle_handle->at(childi).PdgCode();
+            if(pdgcode==13)
+            {
+                nr_trck_temp++;
+            }
+            if(pdgcode==11)
+            {
+                nr_shwr_temp++;
+            }
+        }
+        nr_trck.emplace_back(nr_trck_temp);
+        nr_shwr.emplace_back(nr_shwr_temp);
 
         calculateChargeCenter(e,unordered_daugthers);
         qcvec.emplace_back(collect3DHits(e,unordered_daugthers));

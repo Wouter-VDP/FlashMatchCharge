@@ -133,6 +133,10 @@ private:
       true_pdg; ///< The true particle pdgcode, for single particle generation
   double
       true_energy; ///< The true particle energy, for single particle generation
+
+  short true_ccnc;                   ///< 0=CC 1=NC
+  short true_mode;                   ///< 0=QE/El, 1=RES, 2=DIS, 3=Coherent production
+
   double true_time; ///< The true particle interaction time, for single particle
                     ///generation
   double true_x;    ///< The true particle interaction positon
@@ -150,11 +154,13 @@ private:
   // the plus one is when the event is considered as a whole.)
   unsigned short nr_pfp; ///< Number of pfparticles in the event
 
-  unsigned short nr_nupfp; ///< Number of PandoraNu neutrino candidate vertices
+  unsigned short nr_nupfp;        ///< Number of PandoraNu neutrino candidate vertices
   std::vector<double> nuvtxx;     ///< x coordinate
   std::vector<double> nuvtxy;     ///< y coordinate
   std::vector<double> nuvtxz;     ///< z coordinate
   std::vector<Short_t> nupfp_pdg; ///< PDG code assigned by PandoraNu
+  std::vector<Short_t> nr_shwr;   ///< number of showers in the hierarchy
+  std::vector<Short_t> nr_trck;   ///< number of tracks in the hierarchy
 
   std::vector<double> q_Y_sps; ///< The charge on the collection plane from
                                ///spacepoints associated to pandora hierachy
@@ -239,6 +245,8 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
 
   // Set branches for MC information
   m_tree->Branch("true_pdg", &true_pdg, "true_pdg/s");
+  m_tree->Branch("true_ccnc", &true_ccnc, "true_ccnc/S");
+  m_tree->Branch("true_mode", &true_mode, "true_mode/S");
   m_tree->Branch("true_energy", &true_energy, "true_energy/D");
   m_tree->Branch("true_time", &true_time, "true_time/D");
   m_tree->Branch("true_x", &true_x, "true_x/D");
@@ -274,6 +282,8 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
   m_tree->Branch("nuvtxy", "std::vector<double>", &nuvtxy);
   m_tree->Branch("nuvtxz", "std::vector<double>", &nuvtxz);
   m_tree->Branch("nupfp_pdg", "std::vector<Short_t>", &nupfp_pdg);
+  m_tree->Branch("nr_shwr", "std::vector<Short_t>", &nr_shwr);
+  m_tree->Branch("nr_trck", "std::vector<Short_t>", &nr_trck);
 
   m_tree->Branch("center_of_charge_x", "std::vector<double>",
                  &center_of_charge_x);
@@ -300,6 +310,8 @@ void VertexFlashMatch::resetTreeVar() {
 
   // MC information
   true_pdg = 0;
+  true_ccnc = -1;
+  true_mode = -1;
   true_energy = 0;
   true_time = 0;
   true_x = 0;
@@ -333,6 +345,8 @@ void VertexFlashMatch::resetTreeVar() {
   nuvtxy.clear();
   nuvtxz.clear();
   nupfp_pdg.clear();
+  nr_shwr.clear();
+  nr_trck.clear();
   center_of_charge_x.clear();
   center_of_charge_y.clear();
   center_of_charge_z.clear();
