@@ -1,0 +1,36 @@
+<project name="bnb_nuecosmics_cosmic_pandora_electron_flashMatch">
+    <!--  Project size  -->
+    <numevents>25000</numevents>
+
+    <!--  Operating System  -->
+    <os>SL6</os>
+
+    <!--  Batch resources  -->
+    <resource>DEDICATED,OPPORTUNISTIC,OFFSITE</resource>
+
+
+    <!--  Larsoft information  -->
+    <larsoft>
+        <tag>v06_26_01</tag>
+        <qual>e10:prof</qual>
+        <local>/pnfs/uboone/scratch/users/wvdp/submission/localProducts_larsoft_v06_26_01_e10_prof.tar</local>
+    </larsoft>
+    
+    <!--  Project stages  -->
+    <stage name="flashMatchnuecosmic">
+        <fcl>run_vertex_flash_match.fcl</fcl>
+        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_39/flashMatch/nuecosmics</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_39/flashMatch/nuecosmics</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_39/nuecosmics</workdir>
+        <inputlist>/uboone/app/users/wvdp/Generation/Singles_6_39/BNB_Nu_e_cosmics/sample.txt</inputlist>
+        <!-- <output> -->
+            <!-- bnb_nu_cosmic_pandora_electron_flashMatch${PROCESS}_%tc_gen.root -->
+        <!-- </output> -->
+        <numjobs>370</numjobs>
+        <maxfilesperjob>4</maxfilesperjob>
+        <datatier>flashMatched</datatier>
+        <memory>2000</memory>
+        <jobsub>--expected-lifetime=8h</jobsub>
+    </stage>
+
+</project>

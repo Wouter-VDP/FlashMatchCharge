@@ -3,9 +3,6 @@
 // Check min_x_sps_temp!=9999 otherwise, only do Z matching
 
 
-
-
-
 #include "VertexFlashMatch_module.h"
 
 
@@ -25,10 +22,25 @@ void VertexFlashMatch::analyze(art::Event const & e)
 
 void VertexFlashMatch::fillTree(art::Event const & e)
 {
-	auto pfparticle_handle = e.getValidHandle< std::vector< recob::PFParticle > >("pandoraNu");
-	std::vector< recob::PFParticle > m_pfparticles = *pfparticle_handle;
+    std::cout << "---------------------------------------------------------------------" << std::endl;
 
-    fillTrueTree(e);
+    // Fill run information
+    run    = e.run();
+    subrun = e.subRun();
+    event  = e.event();
+
+    std::cout << "Run: " << run << ", SubRun: " << subrun << ", Event: " << event;
+
+    if(e.isRealData() )
+    {
+        std::cout << ", This is data"<< std::endl;
+    }
+    else
+    {
+        std::cout << ", This is MC, fill the truth tree"<< std::endl;
+        fillTrueTree(e);
+    }
+    std::cout << std::endl;
 	std::vector<flashana::QCluster_t> qcvec      = fillPandoraTree(e);
 	flashana::Flash_t flash                      = fillOticalTree (e);
 	std::vector<flashana::FlashMatch_t> matchvec = makeMatch(qcvec,flash);
@@ -36,6 +48,7 @@ void VertexFlashMatch::fillTree(art::Event const & e)
 
     std::cout<<"variables filled, fill tree"<<std::endl;
     m_tree->Fill();
+    std::cout << "---------------------------------------------------------------------" << std::endl;
 }
 
 
@@ -45,18 +58,13 @@ void VertexFlashMatch::fillTree(art::Event const & e)
 
 void VertexFlashMatch::fillTrueTree(art::Event const & e)
 {
-	// Fill run information
-    run    = e.run();
-    subrun = e.subRun();
-    event  = e.event();
-
     auto const& truth_handle = e.getValidHandle< std::vector< simb::MCTruth > >( "generator" );
     if (truth_handle->size() > 0)
     {
     	simb::MCParticle mcpart;
         if (truth_handle->at(0).NeutrinoSet())
         {
-            std::cout << "This is a neutrino event!" << std::endl;
+            std::cout << "Neutrino interaction" << std::endl;
             mcpart = truth_handle->at(0).GetNeutrino().Nu();
 
             true_ccnc = truth_handle->at(0).GetNeutrino().CCNC();
@@ -65,7 +73,7 @@ void VertexFlashMatch::fillTrueTree(art::Event const & e)
         } //neutrino
         else
         {
-            std::cout << "No neutrinos in event!" << std::endl;
+            std::cout << "No neutrino interaction." << std::endl;
             auto const& mcparticle_handle = e.getValidHandle< std::vector< simb::MCParticle > >( "largeant" );
             mcpart = mcparticle_handle->at(0);
          }
@@ -83,7 +91,7 @@ void VertexFlashMatch::fillTrueTree(art::Event const & e)
         true_sce_y  = true_y + m_sce->GetPosOffsets(true_x, true_y, true_z)[1];
         true_sce_z  = true_z + m_sce->GetPosOffsets(true_x, true_y, true_z)[2];
     }
-    auto const& simphot_handle = e.getValidHandle< std::vector< sim::SimPhotons > >( "largeant" );
+    auto const& simphot_handle = e.getValidHandle< std::vector< sim::SimPhotons > >("largeant");
 
     for(auto const& pmtsimvec :  *simphot_handle)
     {
@@ -100,7 +108,7 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
     art::FindOneP< recob::Vertex > vertex_per_pfpart(pfparticle_handle, e, "pandoraNu");
 
     nr_pfp = pfparticle_handle->size();
-    std::cout<< "Nr of PFP in event: " << nr_pfp << std::endl;
+    std::cout << "Fill the Pandora tree, PFP in event: " << nr_pfp << std::endl;
 
     //The first qvec element should correspond to the sum of all pfparticles in the event to compare 
     std::vector<size_t> allpfplist(nr_pfp);
@@ -113,7 +121,7 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
         
         // We are lokking for neutrinos 
         Short_t pdgcode = pfparticle_handle->at(pfpindex).PdgCode();
-        std::cout<< "PFP" << pfpindex << " has code " << pdgcode << std::endl;
+        //std::cout<< "PFP" << pfpindex << " has code " << pdgcode << std::endl;
 
         if(pdgcode!=12 and pdgcode!=14) continue;
         nr_nupfp++;
@@ -150,6 +158,8 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
 
         calculateChargeCenter(e,unordered_daugthers);
         qcvec.emplace_back(collect3DHits(e,unordered_daugthers));
+        std::cout << "PFP neutrino with PDG" << pdgcode <<", " << nr_trck_temp << " tracks and " << nr_shwr_temp <<  " showers."<<std::endl;
+
     }
 
 	return qcvec;
@@ -200,6 +210,7 @@ flashana::Flash_t VertexFlashMatch::fillOticalTree(art::Event const & e)
         }
 
     }
+    std::cout << nr_flash << " Flashes in event." << std::endl;
 	return matchflash;
 }
 
@@ -254,7 +265,7 @@ std::vector<double> VertexFlashMatch::calculateChargeCenter (art::Event const & 
 	std::vector<double> center(3,0);
 	double min_x_sps_temp = 9999; //random big value that will be overwritten
 
-    std::cerr << "Calculating the center of charge" << std::endl;
+    //std::cerr << "Calculating the center of charge" << std::endl;
 
     // Get the associations from pfparticle to spacepoint
     auto const& spacepoint_handle  =   e.getValidHandle< std::vector<recob::SpacePoint > > ( "pandoraNu" );
@@ -353,7 +364,12 @@ flashana::QCluster_t VertexFlashMatch::collect3DHits(art::Event const & e, std::
 	                hit3D.y = xyz[1];
 	                hit3D.z = xyz[2];
 	                hit3D.plane =  2;
-	                hit3D.q = hit->Integral();
+	                double q = hit->Integral();
+                    if (m_normalized)
+                    {
+                        q*=lycoef;
+                    }
+                    hit3D.q = q;
 
 	                hitlist.emplace_back(hit3D);
 	            }

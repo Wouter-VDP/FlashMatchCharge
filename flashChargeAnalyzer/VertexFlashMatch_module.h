@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       FitSimPhotons
-// File:        FitSimPhotons_module.cc
+// Class:       VertexFlashMatch
+// File:        VertexFlashMatch_module.cc
 // Date:        May 4, 2017
 // Author:      Wouter Van De Pontseele
 ////////////////////////////////////////////////////////////////////////
@@ -151,7 +151,7 @@ private:
   std::vector<int> simphot_spectrum; ///< Array with PMT of the simphotons
 
   // PandoraNu information (vector like fields with a star have nr_pfp+1 size,
-  // the plus one is when the event is considered as a whole.)
+  // the plus one accounta for when the event is considered as a whole.)
   unsigned short nr_pfp; ///< Number of pfparticles in the event
 
   unsigned short nr_nupfp;        ///< Number of PandoraNu neutrino candidate vertices
@@ -196,6 +196,14 @@ private:
   double m_ly_electron;
   double m_ly_muon;
   double m_ly_gamma;
+
+  double m_chE_proton;  // coeficient of charge energy for particles
+  double m_chE_electron;
+  double m_chE_muon;
+  double m_chE_gamma;
+
+  bool m_normalized;
+
   std::map<unsigned short, double> m_ly_map;
 };
 
@@ -214,18 +222,25 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
   reco_spectrum.resize(m_geo->NOpDets(), 0);
 
   // initialize fcl parameters
-  m_startbeamtime = p.get<double>("FlashVetoTimeStart", 3.2);
-  m_endbeamtime = p.get<double>("FlashVetoTimeEnd", 4.8);
+  m_startbeamtime = p.get<double>("FlashVetoTimeStart"  , 3.2);
+  m_endbeamtime   = p.get<double>("FlashVetoTimeEnd"    , 4.8);
 
-  m_ly_proton = p.get<double>("LightYieldProton", 1.0);
-  m_ly_electron = p.get<double>("LightYieldElectron", 1.0);
-  m_ly_muon = p.get<double>("LightYieldMuon", 1.0);
-  m_ly_gamma = p.get<double>("LightYieldGamma", 1.0);
+  m_ly_proton     = p.get<double>("LightYieldProton"    , 32000);
+  m_ly_electron   = p.get<double>("LightYieldElectron"  , 33333);
+  m_ly_muon       = p.get<double>("LightYieldMuon"      , 40000);
+  m_ly_gamma      = p.get<double>("LightYieldGamma"     , 33333);
 
-  m_ly_map = {{2212, m_ly_proton},
-              {11, m_ly_electron},
-              {13, m_ly_muon},
-              {22, m_ly_gamma}};
+  m_chE_proton    = p.get<double>("ChargeEnergyProton"  , 1.0/50);
+  m_chE_electron  = p.get<double>("ChargeEnergyElectron", 1.0/65);
+  m_chE_muon      = p.get<double>("ChargeEnergyMuon"    , 1.0/110);
+  m_chE_gamma     = p.get<double>("ChargeEnergyGamma"   , 1.0/65);
+
+  m_normalized     = p.get<bool> ("NormalizedHypo"     , false);
+
+  m_ly_map = {{2212, m_ly_proton*m_chE_proton},
+              {11, m_ly_electron*m_chE_electron},
+              {13, m_ly_muon*m_chE_muon},
+              {22, m_ly_gamma*m_chE_gamma}};
 
   m_mgr.Configure(p.get<flashana::Config_t>("FlashMatchConfig"));
 

@@ -1,4 +1,4 @@
-<project name="nue_flashMatch">
+<project name="nu_flashMatch">
     <!--  Project size  -->
     <numevents>100000</numevents>
 
@@ -17,12 +17,12 @@
     </larsoft>
     
     <!--  Project stages  -->
-    <stage name="flashMatchNue">
+    <stage name="flashMatchNu">
         <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_42/nue</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_42/nue</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_42/nue</workdir>
-        <inputlist>/uboone/app/users/wvdp/Binaries/MyLarsoft/srcs/FlashMatchCharge/flashChargeAnalyzer/job/filelists/nue.list</inputlist>
+        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_42/nu</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_42/nu</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_42/nu</workdir>
+        <inputlist>/uboone/app/users/wvdp/Binaries/MyLarsoft/srcs/FlashMatchCharge/flashChargeAnalyzer/job/filelists/nu.list</inputlist>
         <numjobs>500</numjobs>
         <maxfilesperjob>2</maxfilesperjob>
         <datatier>flashMatched</datatier>

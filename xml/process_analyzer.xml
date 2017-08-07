@@ -1,6 +1,6 @@
-<project name="bnb_nue_cosmic_pandora_electron_flashMatch">
+<project name="nue_flashMatch">
     <!--  Project size  -->
-    <numevents>30000</numevents>
+    <numevents>3000</numevents>
 
     <!--  Operating System  -->
     <os>SL6</os>
@@ -17,19 +17,17 @@
     </larsoft>
     
     <!--  Project stages  -->
-    <stage name="flashMatchelectron">
+    <stage name="flashMatchNue">
         <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_36/flashMatch/electrons</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_36/flashMatch/electrons</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_36/electrons</workdir>
-        <inputlist>/uboone/app/users/wvdp/Generation/Singles_6_36/Electrons/electronsample.vdp</inputlist>
-        <!-- <output> -->
-            <!-- bnb_nu_cosmic_pandora_electron_flashMatch${PROCESS}_%tc_gen.root -->
-        <!-- </output> -->
+        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_42/nue</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_42/nue</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_42/nue</workdir>
+        <inputlist>/uboone/app/users/wvdp/Binaries/MyLarsoft/srcs/FlashMatchCharge/flashChargeAnalyzer/job/filelists/nue.list</inputlist>
         <numjobs>350</numjobs>
         <maxfilesperjob>2</maxfilesperjob>
         <datatier>flashMatched</datatier>
         <memory>2000</memory>
+        <disk>50GB</disk>
         <jobsub>--expected-lifetime=8h</jobsub>
     </stage>
 
