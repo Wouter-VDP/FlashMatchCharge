@@ -16,6 +16,7 @@ services :
   TimeTracker:              {}
   RandomNumberGenerator:    {}
   Geometry:                       @local::microboone_geo
+  BackTracker:             @local::microboone_backtracker
   @table::microboone_services_reco
   @table::microboone_simulation_services
 }

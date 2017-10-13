@@ -14,9 +14,7 @@ art_make(
                         art_Framework_Core
                         art_Framework_Services_Registry
                         art_Framework_Principal
-                        art_Persistency_Common canvas_Persistency_Common canvas_Persistency_Common
-                        art_Persistency_Provenance canvas_Persistency_Provenance canvas_Persistency_Provenance       
-                        art_Utilities canvas_Utilities canvas_Utilities
+                        canvas
                         art_Utilities 
                         art_Persistency_Common 
                         art_Persistency_Provenance 
@@ -51,9 +49,7 @@ art_make(
                         art_Framework_Core
                         art_Framework_Services_Registry
                         art_Framework_Principal
-                        art_Utilities 
-                        art_Persistency_Provenance canvas_Persistency_Provenance canvas_Persistency_Provenance       
-                        art_Utilities canvas_Utilities canvas_Utilities
+                        canvas
                         art_Utilities 
                         art_Persistency_Common 
                         art_Persistency_Provenance 

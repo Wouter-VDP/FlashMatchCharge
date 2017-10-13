@@ -1,4 +1,4 @@
-<project name="nu_flashMatch">
+<project name="extbnb_flashMatch">
     <!--  Project size  -->
     <numevents>100000</numevents>
 
@@ -13,20 +13,20 @@
     <larsoft>
         <tag>v06_26_01</tag>
         <qual>e10:prof</qual>
-        <local>/pnfs/uboone/scratch/users/wvdp/submission/localProducts_larsoft_v06_26_01_e10_prof.tar</local>
+        <local>/pnfs/uboone/scratch/users/wvdp/submission/v06_26_01_bnb.tar</local>
     </larsoft>
     
     <!--  Project stages  -->
-    <stage name="flashMatchNu">
+    <stage name="flashMatchbnb">
         <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC82/nu</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/MCC82/nu</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC82/nu</workdir>
-        <inputdef> prodgenie_bnb_nu_cosmic_uboone_mcc8.2_reco2</inputdef>
-        <numjobs>500</numjobs>
+        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC82/bnb</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/MCC82/bnb</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC82/bnb</workdir>
+        <inputdef>prod_reco2_bnb_v8_mcc8 </inputdef>
+        <numjobs>1000</numjobs>
         <maxfilesperjob>2</maxfilesperjob>
         <datatier>flashMatched</datatier>
-        <memory>4000</memory>
+        <memory>2000</memory>
         <disk>50GB</disk>
         <jobsub>--expected-lifetime=8h</jobsub>
     </stage>

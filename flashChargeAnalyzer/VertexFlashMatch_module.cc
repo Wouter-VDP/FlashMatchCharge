@@ -42,12 +42,17 @@ void VertexFlashMatch::fillTree(art::Event const & e)
     }
     std::cout << std::endl;
 	std::vector<flashana::QCluster_t> qcvec      = fillPandoraTree(e);
-	flashana::Flash_t flash                      = fillOticalTree (e);
-	std::vector<flashana::FlashMatch_t> matchvec = makeMatch(qcvec,flash);
-	fillMatchTree(matchvec);
 
-    std::cout<<"variables filled, fill tree"<<std::endl;
-    m_tree->Fill();
+	flashana::Flash_t flash                      = fillOticalTree (e);
+    if(nr_flash>0)
+    {
+	   std::vector<flashana::FlashMatch_t> matchvec = makeMatch(qcvec,flash);
+	   fillMatchTree(matchvec);
+
+        std::cout<<"variables filled, fill tree"<<std::endl;
+
+         m_tree->Fill();
+    }
     std::cout << "---------------------------------------------------------------------" << std::endl;
 }
 
@@ -64,7 +69,7 @@ void VertexFlashMatch::fillTrueTree(art::Event const & e)
     	simb::MCParticle mcpart;
         if (truth_handle->at(0).NeutrinoSet())
         {
-            std::cout << "Neutrino interaction" << std::endl;
+            //std::cout << "Neutrino interaction" << std::endl;
             mcpart = truth_handle->at(0).GetNeutrino().Nu();
 
             true_ccnc = truth_handle->at(0).GetNeutrino().CCNC();
@@ -73,7 +78,7 @@ void VertexFlashMatch::fillTrueTree(art::Event const & e)
         } //neutrino
         else
         {
-            std::cout << "No neutrino interaction." << std::endl;
+            //std::cout << "No neutrino interaction." << std::endl;
             auto const& mcparticle_handle = e.getValidHandle< std::vector< simb::MCParticle > >( "largeant" );
             mcpart = mcparticle_handle->at(0);
          }
@@ -110,16 +115,49 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
     nr_pfp = pfparticle_handle->size();
     std::cout << "Fill the Pandora tree, PFP in event: " << nr_pfp << std::endl;
 
-    //The first qvec element should correspond to the sum of all pfparticles in the event to compare 
+    // --- Do the recotruth matching
+    lar_pandora::MCParticlesToPFParticles matchedParticles;    // This is a map: MCParticle to matched PFParticle
+    std::vector< art::Ptr<recob::PFParticle> > neutrino_pf;
+    std::vector< art::Ptr<recob::PFParticle> > cosmic_pf;
+    art::ServiceHandle<cheat::BackTracker> bt;
+
+    if(!e.isRealData())
+    {
+        getRecoToTrueMatches(e, matchedParticles);
+
+        for (lar_pandora::MCParticlesToPFParticles::const_iterator iter1 = matchedParticles.begin(), iterEnd1 = matchedParticles.end();
+            iter1 != iterEnd1; ++iter1)
+        {
+
+            art::Ptr<simb::MCParticle>  mc_par = iter1->first;   // The MCParticle
+            art::Ptr<recob::PFParticle> pf_par = iter1->second;  // The matched PFParticle
+
+            const art::Ptr<simb::MCTruth> mc_truth = bt->TrackIDToMCTruth(mc_par->TrackId());
+
+            if (mc_truth->Origin() == simb::kBeamNeutrino)
+            {
+                neutrino_pf.push_back(pf_par);
+            }
+
+            if (mc_truth->Origin() == simb::kCosmicRay)
+            {
+                cosmic_pf.push_back(pf_par);
+            }
+        }
+    }
+
+
+    //The first qvec element should correspond to the sum of all pfparticles in the event to compare
     std::vector<size_t> allpfplist(nr_pfp);
     std::iota(std::begin(allpfplist), std::end(allpfplist), 0); //0 is the starting number
     calculateChargeCenter(e,allpfplist);
     qcvec.emplace_back(collect3DHits(e,allpfplist));
 
+
     for(size_t pfpindex =0; pfpindex< nr_pfp; pfpindex++)
     {
-        
-        // We are lokking for neutrinos 
+
+        // We are lokking for neutrinos
         Short_t pdgcode = pfparticle_handle->at(pfpindex).PdgCode();
         //std::cout<< "PFP" << pfpindex << " has code " << pdgcode << std::endl;
 
@@ -136,7 +174,7 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
         nupfp_pdg.emplace_back(pdgcode);
 
         std::vector<size_t> unordered_daugthers;
-        traversePFParticleTree(pfpindex,unordered_daugthers,pfparticle_handle); 
+        traversePFParticleTree(pfpindex,unordered_daugthers,pfparticle_handle);
 
         //Fill nr_trck and nr_shwr
         Short_t nr_trck_temp=0;
@@ -156,9 +194,16 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
         nr_trck.emplace_back(nr_trck_temp);
         nr_shwr.emplace_back(nr_shwr_temp);
 
+        Short_t classint = 0;
+        if(!e.isRealData())
+        {
+            classint = classify(e,neutrino_pf,cosmic_pf,unordered_daugthers);
+            classRecoTrue.emplace_back(classint);
+        }
+
         calculateChargeCenter(e,unordered_daugthers);
         qcvec.emplace_back(collect3DHits(e,unordered_daugthers));
-        std::cout << "PFP neutrino with PDG" << pdgcode <<", " << nr_trck_temp << " tracks and " << nr_shwr_temp <<  " showers."<<std::endl;
+        std::cout << "PFP neutrino with PDG" << pdgcode <<", " << nr_trck_temp << " tracks and " << nr_shwr_temp <<  " showers. Class: " << classint <<std::endl;
 
     }
 
@@ -169,16 +214,16 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
 flashana::Flash_t VertexFlashMatch::fillOticalTree(art::Event const & e)
 {
 	flashana::Flash_t matchflash;
-	
-	auto const& optical_handle = e.getValidHandle<std::vector<recob::OpFlash>>("simpleFlashBeam");
 
+	auto const& optical_handle = e.getValidHandle<std::vector<recob::OpFlash>>("simpleFlashBeam");
+    std::cout << "Number of flash objects:" << optical_handle->size() <<std::endl;
     // Loop over the beamflashes, convert the one that is in beamtime and has the highest PE to the flash_t
     int maxPE = 0;
     for(auto const& flash : *optical_handle)
     {
         if(flash.Time()>m_startbeamtime && flash.Time()<m_endbeamtime)
         {
-        	nr_flash+=1;
+        	nr_flash=nr_flash+1;
             int thisPE =0;
             ::flashana::Flash_t f;
             f.x = f.x_err = 0;
@@ -218,8 +263,8 @@ flashana::Flash_t VertexFlashMatch::fillOticalTree(art::Event const & e)
 std::vector<flashana::FlashMatch_t> VertexFlashMatch::makeMatch(std::vector<flashana::QCluster_t> const  & clustervec,  flashana::Flash_t const & flashReco)
 {
 	std::vector<flashana::FlashMatch_t> matchvec;
-	
-    ::flashana::Flash_t flashRecoCopy = flashReco; 
+
+    ::flashana::Flash_t flashRecoCopy = flashReco;
 
     m_mgr.Reset();
     m_mgr.Emplace(std::move(flashRecoCopy));
@@ -229,7 +274,7 @@ std::vector<flashana::FlashMatch_t> VertexFlashMatch::makeMatch(std::vector<flas
         flashana::QCluster_t clusterCopy = cluster;
         m_mgr.Emplace(std::move(clusterCopy));
     }
-    
+
     matchvec = m_mgr.Match();
 
 	return matchvec;
@@ -329,11 +374,153 @@ std::vector<double> VertexFlashMatch::calculateChargeCenter (art::Event const & 
 	return center;
 }
 
+void VertexFlashMatch::getRecoToTrueMatches(art::Event const &e, lar_pandora::MCParticlesToPFParticles &matchedParticles)
+{
+	std::string _hitfinderLabel = "pandoraCosmicHitRemoval";
+	std::string _geantModuleLabel = "largeant";
+    std::string _pfp_producer = "pandoraNu";
+    std::string _spacepointLabel = "pandoraNu";
+    std::string _mctruthLabel = "generator";
+	bool _debug = true;
+
+    // --- Collect hits
+    lar_pandora::HitVector hitVector;
+    lar_pandora::LArPandoraHelper::CollectHits(e, _hitfinderLabel, hitVector);
+
+    // --- Collect PFParticles and match Reco Particles to Hits
+    lar_pandora::PFParticleVector  recoParticleVector;
+    lar_pandora::PFParticleVector  recoNeutrinoVector;
+    lar_pandora::PFParticlesToHits recoParticlesToHits;
+    lar_pandora::HitsToPFParticles recoHitsToParticles;
+
+    lar_pandora::LArPandoraHelper::CollectPFParticles(e, _pfp_producer, recoParticleVector);
+    lar_pandora::LArPandoraHelper::SelectNeutrinoPFParticles(recoParticleVector, recoNeutrinoVector);
+    lar_pandora::LArPandoraHelper::BuildPFParticleHitMaps(e, _pfp_producer, _spacepointLabel, recoParticlesToHits, recoHitsToParticles, lar_pandora::LArPandoraHelper::kAddDaughters);
+
+    if (_debug) {
+      std::cout << "[ElectronEventSelectionAlg] " << "  RecoNeutrinos: " << recoNeutrinoVector.size() << std::endl;
+      std::cout << "[ElectronEventSelectionAlg] " << "  RecoParticles: " << recoParticleVector.size() << std::endl;
+    }
+
+    // --- Collect MCParticles and match True Particles to Hits
+    lar_pandora::MCParticleVector     trueParticleVector;
+    lar_pandora::MCTruthToMCParticles truthToParticles;
+    lar_pandora::MCParticlesToMCTruth particlesToTruth;
+    lar_pandora::MCParticlesToHits    trueParticlesToHits;
+    lar_pandora::HitsToMCParticles    trueHitsToParticles;
+
+    if (!e.isRealData()) {
+      lar_pandora::LArPandoraHelper::CollectMCParticles(e, _geantModuleLabel, trueParticleVector);
+      lar_pandora::LArPandoraHelper::CollectMCParticles(e, _geantModuleLabel, truthToParticles, particlesToTruth);
+      lar_pandora::LArPandoraHelper::BuildMCParticleHitMaps(e, _geantModuleLabel, hitVector, trueParticlesToHits, trueHitsToParticles, lar_pandora::LArPandoraHelper::kAddDaughters);
+    }
+
+    if (_debug) {
+      std::cout << "[ElectronEventSelectionAlg] " << "  TrueParticles: " << particlesToTruth.size() << std::endl;
+      std::cout << "[ElectronEventSelectionAlg] " << "  TrueEvents: " << truthToParticles.size() << std::endl;
+    }
+
+    lar_pandora::MCParticlesToHits        matchedParticleHits;
+	std::set< art::Ptr<recob::PFParticle> > vetoReco;
+	std::set< art::Ptr<simb::MCParticle> > vetoTrue;
+	bool _recursiveMatching = true;
+
+    GetRecoToTrueMatches(recoParticlesToHits, trueHitsToParticles, matchedParticles, matchedParticleHits,vetoReco,vetoTrue,_recursiveMatching);
+ }
+
+void VertexFlashMatch::GetRecoToTrueMatches(const lar_pandora::PFParticlesToHits &recoParticlesToHits,
+  	                                          const lar_pandora::HitsToMCParticles &trueHitsToParticles,
+  	                                          lar_pandora::MCParticlesToPFParticles &matchedParticles,
+  	                                          lar_pandora::MCParticlesToHits &matchedHits,
+  	                                          std::set< art::Ptr<recob::PFParticle> > &vetoReco,
+  	                                          std::set< art::Ptr<simb::MCParticle> > &vetoTrue,
+  	                                          bool _recursiveMatching)
+{
+    bool foundMatches(false);
+
+    // Loop over the reco particles
+    for (lar_pandora::PFParticlesToHits::const_iterator iter1 = recoParticlesToHits.begin(), iterEnd1 = recoParticlesToHits.end();
+    iter1 != iterEnd1; ++iter1)
+    {
+      const art::Ptr<recob::PFParticle> recoParticle = iter1->first;
+      if (vetoReco.count(recoParticle) > 0)
+      continue;
+
+      const lar_pandora::HitVector &hitVector = iter1->second;
+
+      lar_pandora::MCParticlesToHits truthContributionMap;
+
+      // Loop over all the hits associated to this reco particle
+      for (lar_pandora::HitVector::const_iterator iter2 = hitVector.begin(), iterEnd2 = hitVector.end(); iter2 != iterEnd2; ++iter2)
+      {
+        const art::Ptr<recob::Hit> hit = *iter2;
+
+        lar_pandora::HitsToMCParticles::const_iterator iter3 = trueHitsToParticles.find(hit);
+        if (trueHitsToParticles.end() == iter3)
+        {
+        	continue;
+        }
+
+        const art::Ptr<simb::MCParticle> trueParticle = iter3->second;
+        if (vetoTrue.count(trueParticle) > 0)
+        {
+        	continue;
+        }
+
+        // This map will contain all the true particles that match some or all of the hits of the reco particle
+        truthContributionMap[trueParticle].push_back(hit);
+      }
+
+      // Now we want to find the true particle that has more hits in common with this reco particle than the others
+      lar_pandora::MCParticlesToHits::const_iterator mIter = truthContributionMap.end();
+
+      for (lar_pandora::MCParticlesToHits::const_iterator iter4 = truthContributionMap.begin(), iterEnd4 = truthContributionMap.end();
+      iter4 != iterEnd4; ++iter4)
+      {
+        if ((truthContributionMap.end() == mIter) || (iter4->second.size() > mIter->second.size()))
+        {
+          mIter = iter4;
+        }
+      }
+
+      if (truthContributionMap.end() != mIter)
+      {
+        const art::Ptr<simb::MCParticle> trueParticle = mIter->first;
+
+        lar_pandora::MCParticlesToHits::const_iterator iter5 = matchedHits.find(trueParticle);
+
+        if ((matchedHits.end() == iter5) || (mIter->second.size() > iter5->second.size()))
+        {
+          matchedParticles[trueParticle] = recoParticle;
+          matchedHits[trueParticle] = mIter->second;
+          foundMatches = true;
+        }
+      }
+    } // recoParticlesToHits loop ends
+
+    if (!foundMatches){
+    	return;
+    }
+
+
+    for (lar_pandora::MCParticlesToPFParticles::const_iterator pIter = matchedParticles.begin(), pIterEnd = matchedParticles.end();
+    pIter != pIterEnd; ++pIter)
+    {
+      vetoTrue.insert(pIter->first);
+      vetoReco.insert(pIter->second);
+    }
+
+    if (_recursiveMatching)
+    {
+    	GetRecoToTrueMatches(recoParticlesToHits, trueHitsToParticles, matchedParticles, matchedHits, vetoReco, vetoTrue, _recursiveMatching);
+    }
+ }
+
 
 flashana::QCluster_t VertexFlashMatch::collect3DHits(art::Event const & e, std::vector<size_t> const & pfplist)
 {
 	flashana::QCluster_t cluster;
-	
+
 	auto const& pfparticle_handle = e.getValidHandle< std::vector< recob::PFParticle > >("pandoraNu");
 	auto const& spacepoint_handle = e.getValidHandle<std::vector<recob::SpacePoint>>("pandoraNu");
 
@@ -375,7 +562,7 @@ flashana::QCluster_t VertexFlashMatch::collect3DHits(art::Event const & e, std::
 	            }
 	        }
 	    }
-    	cluster+= ((flashana::LightCharge*)(m_mgr.GetCustomAlgo("LightCharge")))->FlashHypothesisCharge(hitlist, lycoef);   
+    	cluster+= ((flashana::LightCharge*)(m_mgr.GetCustomAlgo("LightCharge")))->FlashHypothesisCharge(hitlist, lycoef);
 	}
 	return cluster;
 }
@@ -388,16 +575,65 @@ flashana::QCluster_t VertexFlashMatch::collect3DHits(art::Event const & e, std::
 void VertexFlashMatch::traversePFParticleTree (size_t top_index, std::vector<size_t> & unordered_daugthers,const art::ValidHandle<std::vector<recob::PFParticle> > pfparticle_handle)
 {
 	unordered_daugthers.push_back(top_index);
-	if (pfparticle_handle->at(top_index).Daughters().size() == 0) 
+	if (pfparticle_handle->at(top_index).Daughters().size() == 0)
 	{
 		return;
 	}
 
 	// Else, recursive:
-	for (size_t i = 0; i < pfparticle_handle->at(top_index).Daughters().size(); i ++) 
+	for (size_t i = 0; i < pfparticle_handle->at(top_index).Daughters().size(); i ++)
 	{
-		traversePFParticleTree(pfparticle_handle->at(top_index).Daughters().at(i), unordered_daugthers ,pfparticle_handle);
+		traversePFParticleTree(pfparticle_handle->at(top_index).Daughters().at(i)
+		                          , unordered_daugthers ,
+		                          pfparticle_handle);
 	}
+}
+
+Short_t VertexFlashMatch::classify(art::Event const &e, std::vector< art::Ptr<recob::PFParticle> > &neutrino_pf, std::vector< art::Ptr<recob::PFParticle> > &cosmic_pf, std::vector<size_t> &unordered_daugthers)
+{
+    bool neutrino_found = false;
+    bool cosmic_found = false;
+
+    for (size_t ipfp = 0; ipfp < unordered_daugthers.size(); ipfp++) {
+        for (size_t ipf = 0; ipf < cosmic_pf.size(); ipf++ ) {
+            if (unordered_daugthers[ipfp] == cosmic_pf[ipf].key())
+            {
+                cosmic_found = true;
+            break;
+            }
+        }
+    }
+    for (size_t ipfp = 0; ipfp < unordered_daugthers.size(); ipfp++) {
+        for (size_t ipf = 0; ipf < neutrino_pf.size(); ipf++ ) {
+            if (unordered_daugthers[ipfp] == neutrino_pf[ipf].key())
+            {
+                neutrino_found = true;
+                break;
+            }
+        }
+    }
+    if(neutrino_found)
+    {
+        if (cosmic_found)
+        {
+            return 3; //Mixed
+        }
+        else
+        {
+            return 1; //Neutrino
+        }
+    }
+    else
+    {
+        if (cosmic_found)
+        {
+            return 2; //Cosmic
+        }
+        else
+        {
+            return 4; //Dirt
+        }
+    }
 }
 
 

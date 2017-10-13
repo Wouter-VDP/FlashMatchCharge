@@ -1,6 +1,6 @@
 <project name="nue_flashMatch">
     <!--  Project size  -->
-    <numevents>100000</numevents>
+    <numevents>1000000</numevents>
 
     <!--  Operating System  -->
     <os>SL6</os>
@@ -19,14 +19,14 @@
     <!--  Project stages  -->
     <stage name="flashMatchNue">
         <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_42/nue</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_42/nue</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_42/nue</workdir>
-        <inputlist>/uboone/app/users/wvdp/Binaries/MyLarsoft/srcs/FlashMatchCharge/flashChargeAnalyzer/job/filelists/nue.list</inputlist>
-        <numjobs>500</numjobs>
+        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC82/nue</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/MCC82/nue</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC82/nue</workdir>
+        <inputdef>prodgenie_bnb_intrinsic_nue_cosmic_uboone_mcc8.2_reco2</inputdef>
+        <numjobs>1000</numjobs>
         <maxfilesperjob>2</maxfilesperjob>
         <datatier>flashMatched</datatier>
-        <memory>2000</memory>
+        <memory>4000</memory>
         <disk>50GB</disk>
         <jobsub>--expected-lifetime=8h</jobsub>
     </stage>

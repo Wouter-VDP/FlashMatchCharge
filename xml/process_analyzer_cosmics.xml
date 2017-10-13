@@ -1,6 +1,6 @@
-<project name="bnb_nuecosmics_cosmic_pandora_electron_flashMatch">
+<project name="nue_flashMatch">
     <!--  Project size  -->
-    <numevents>25000</numevents>
+    <numevents>288200</numevents>
 
     <!--  Operating System  -->
     <os>SL6</os>
@@ -17,19 +17,17 @@
     </larsoft>
     
     <!--  Project stages  -->
-    <stage name="flashMatchnuecosmic">
+    <stage name="flashMatchCosmics">
         <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_39/flashMatch/nuecosmics</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_39/flashMatch/nuecosmics</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_39/nuecosmics</workdir>
-        <inputlist>/uboone/app/users/wvdp/Generation/Singles_6_39/BNB_Nu_e_cosmics/sample.txt</inputlist>
-        <!-- <output> -->
-            <!-- bnb_nu_cosmic_pandora_electron_flashMatch${PROCESS}_%tc_gen.root -->
-        <!-- </output> -->
-        <numjobs>370</numjobs>
-        <maxfilesperjob>4</maxfilesperjob>
+        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC82/cosmics</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/MCC82/cosmics</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC82/cosmics</workdir>
+        <inputdef>prodcosmics_corsika_cmc_uboone_mcc8.2_reco2</inputdef>
+        <numjobs>2000</numjobs>
+        <maxfilesperjob>6</maxfilesperjob>
         <datatier>flashMatched</datatier>
-        <memory>2000</memory>
+        <memory>6000</memory>
+        <disk>68GB</disk>
         <jobsub>--expected-lifetime=8h</jobsub>
     </stage>
 

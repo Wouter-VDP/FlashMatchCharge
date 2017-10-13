@@ -13,17 +13,17 @@
     <larsoft>
         <tag>v06_26_01</tag>
         <qual>e10:prof</qual>
-        <local>/pnfs/uboone/scratch/users/wvdp/submission/localProducts_larsoft_v06_26_01_e10_prof.tar</local>
+        <local>/pnfs/uboone/scratch/users/wvdp/submission/v06_26_01_extbnb.tar</local>
     </larsoft>
     
     <!--  Project stages  -->
     <stage name="flashMatchExtbnb">
         <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/v06_42/extbnb</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/v06_42/extbnb</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/v06_42/extbnb</workdir>
-        <inputlist>/uboone/app/users/wvdp/Binaries/MyLarsoft/srcs/FlashMatchCharge/flashChargeAnalyzer/job/filelists/extbnb.list</inputlist>
-        <numjobs>500</numjobs>
+        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC82/extbnb</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/MCC82/extbnb</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC82/extbnb</workdir>
+        <inputdef>prod_reco2_extbnb_v8_mcc8 </inputdef>
+        <numjobs>1000</numjobs>
         <maxfilesperjob>2</maxfilesperjob>
         <datatier>flashMatched</datatier>
         <memory>2000</memory>

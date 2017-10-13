@@ -33,6 +33,9 @@
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 
+#include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+#include "larsim/MCCheater/BackTracker.h"
+
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -104,6 +107,16 @@ private:
   std::vector<double> calculateChargeCenter(art::Event const &e,
                                             std::vector<size_t> const &pfplist);
 
+  // L2: Returns a list of matche dobjects, MC and PFPs
+  void getRecoToTrueMatches(art::Event const &e, lar_pandora::MCParticlesToPFParticles &matchedParticles);
+  void GetRecoToTrueMatches(const lar_pandora::PFParticlesToHits &recoParticlesToHits,
+  	                                          const lar_pandora::HitsToMCParticles &trueHitsToParticles, 
+  	                                          lar_pandora::MCParticlesToPFParticles &matchedParticles, 
+  	                                          lar_pandora::MCParticlesToHits &matchedHits, 
+  	                                          std::set< art::Ptr<recob::PFParticle> > &vetoReco, 
+  	                                          std::set< art::Ptr<simb::MCParticle> > &vetoTrue, 
+  	                                          bool _recursiveMatching);
+
   // L2: Returns a QCluster given a list of pfparticles (ony using collection
   // plane currently)
   flashana::QCluster_t collect3DHits(art::Event const &e,
@@ -115,6 +128,9 @@ private:
   void traversePFParticleTree(
       size_t top_index, std::vector<size_t> &unordered_daugthers,
       const art::ValidHandle<std::vector<recob::PFParticle>> pfparticles);
+
+  // L3: Returns the category that a PFP neutrino hierarchy belongs too
+  Short_t classify(art::Event const &e, std::vector< art::Ptr<recob::PFParticle> > &neutrino_pf, std::vector< art::Ptr<recob::PFParticle> > &cosmic_pf, std::vector<size_t> &unordered_daugthers);
 
   // Variables
   ::flashana::FlashMatchManager m_mgr;
@@ -129,7 +145,7 @@ private:
   unsigned int event;
 
   // MC information
-  unsigned short
+  short
       true_pdg; ///< The true particle pdgcode, for single particle generation
   double
       true_energy; ///< The true particle energy, for single particle generation
@@ -161,7 +177,7 @@ private:
   std::vector<Short_t> nupfp_pdg; ///< PDG code assigned by PandoraNu
   std::vector<Short_t> nr_shwr;   ///< number of showers in the hierarchy
   std::vector<Short_t> nr_trck;   ///< number of tracks in the hierarchy
-
+  std::vector<Short_t> classRecoTrue; ///< 0: not filled, data; 1: neutrino; 2: cosmics; 3: mixed; 4: dirt
   std::vector<double> q_Y_sps; ///< The charge on the collection plane from
                                ///spacepoints associated to pandora hierachy
   std::vector<double> center_of_charge_x; ///< x Center of deposited charge
@@ -259,7 +275,7 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
   m_tree->Branch("event", &event, "event/i");
 
   // Set branches for MC information
-  m_tree->Branch("true_pdg", &true_pdg, "true_pdg/s");
+  m_tree->Branch("true_pdg", &true_pdg, "true_pdg/S");
   m_tree->Branch("true_ccnc", &true_ccnc, "true_ccnc/S");
   m_tree->Branch("true_mode", &true_mode, "true_mode/S");
   m_tree->Branch("true_energy", &true_energy, "true_energy/D");
@@ -297,6 +313,7 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
   m_tree->Branch("nuvtxy", "std::vector<double>", &nuvtxy);
   m_tree->Branch("nuvtxz", "std::vector<double>", &nuvtxz);
   m_tree->Branch("nupfp_pdg", "std::vector<Short_t>", &nupfp_pdg);
+  m_tree->Branch("classRecoTrue", "std::vector<Short_t>", &classRecoTrue);
   m_tree->Branch("nr_shwr", "std::vector<Short_t>", &nr_shwr);
   m_tree->Branch("nr_trck", "std::vector<Short_t>", &nr_trck);
 
@@ -362,6 +379,7 @@ void VertexFlashMatch::resetTreeVar() {
   nupfp_pdg.clear();
   nr_shwr.clear();
   nr_trck.clear();
+  classRecoTrue.clear();
   center_of_charge_x.clear();
   center_of_charge_y.clear();
   center_of_charge_z.clear();
