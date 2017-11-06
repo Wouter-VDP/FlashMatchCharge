@@ -92,9 +92,12 @@ void VertexFlashMatch::fillTrueTree(art::Event const & e)
         true_px     = mcpart.Px();
         true_py     = mcpart.Py();
         true_pz     = mcpart.Pz();
-        true_sce_x  = true_x - m_sce->GetPosOffsets(true_x, true_y, true_z)[0]+0.7;
-        true_sce_y  = true_y + m_sce->GetPosOffsets(true_x, true_y, true_z)[1];
-        true_sce_z  = true_z + m_sce->GetPosOffsets(true_x, true_y, true_z)[2];
+
+        auto const* SCE = lar::providerFrom<spacecharge::SpaceChargeService>();
+      	true_sce_x=   true_x- SCE->GetPosOffsets(true_x, true_y, true_z)[0]+0.7 ;
+      	true_sce_y=   true_y+ SCE->GetPosOffsets(true_x, true_y, true_z)[1];
+      	true_sce_z=   true_z+ SCE->GetPosOffsets(true_x, true_y, true_z)[2];
+
     }
     auto const& simphot_handle = e.getValidHandle< std::vector< sim::SimPhotons > >("largeant");
 
@@ -148,10 +151,10 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
 
 
     //The first qvec element should correspond to the sum of all pfparticles in the event to compare
-    std::vector<size_t> allpfplist(nr_pfp);
-    std::iota(std::begin(allpfplist), std::end(allpfplist), 0); //0 is the starting number
-    calculateChargeCenter(e,allpfplist);
-    qcvec.emplace_back(collect3DHits(e,allpfplist));
+    //std::vector<size_t> allpfplist(nr_pfp);
+    //std::iota(std::begin(allpfplist), std::end(allpfplist), 0); //0 is the starting number
+    //calculateChargeCenter(e,allpfplist);
+    //qcvec.emplace_back(collect3DHits(e,allpfplist));
 
 
     for(size_t pfpindex =0; pfpindex< nr_pfp; pfpindex++)

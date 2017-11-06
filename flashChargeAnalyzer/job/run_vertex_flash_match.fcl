@@ -57,6 +57,7 @@ physics: {
 }
 services.DetectorClocksService.InheritClockConfig:                                   false
 services.DetectorClocksService.TriggerOffsetTPC:                                     -0.400e3
+services.SpaceCharge.EnableSimSpatialSCE: true
 
 services.message.destinations :
 {

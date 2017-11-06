@@ -6,26 +6,23 @@ art_make(
           LIBRARY_NAME
                         LightYield
           LIB_LIBRARIES
-                        larpandora_LArPandoraInterface
-                        lardataobj_RecoBase
-                        nusimdata_SimulationBase
 
                         uboonecode_uboone_BasicTool_GeoAlgo
                         uboone_UBFlashFinder
                         uboonecode_uboone_SelectionTool_OpT0FinderBase
                         uboonecode_uboone_SelectionTool_OpT0FinderAlgorithms
 
+                        larpandora_LArPandoraInterface
+                        lardataobj_RecoBase
+                        nusimdata_SimulationBase
                         larcore_Geometry
                         larcore_Geometry_Geometry_service
                         art_Framework_Core
                         art_Framework_Services_Registry
                         art_Framework_Principal
-                        canvas
-                        art_Utilities 
-                        art_Persistency_Common 
-                        art_Persistency_Provenance 
-                        uboone_SpaceCharge
-                        uboone_SpaceChargeServices_SpaceChargeServiceMicroBooNE_service
+                        art_Persistency_Common canvas_Persistency_Common
+                        art_Persistency_Provenance canvas_Persistency_Provenance
+                        art_Utilities canvas_Utilities
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_IO_SOURCES}
                         ${ART_FRAMEWORK_PRINCIPAL}
@@ -47,7 +44,6 @@ art_make(
                         ${SIMULATIONBASE}
 
           MODULE_LIBRARIES
-                        SpaceCharge
                         larpandora_LArPandoraInterface
                         lardataobj_RecoBase
                         nusimdata_SimulationBase
@@ -63,7 +59,7 @@ art_make(
                         art_Framework_Core
                         art_Framework_Services_Registry
                         art_Framework_Principal
-                        canvas
+                        art_Utilities 
                         art_Utilities 
                         art_Persistency_Common 
                         art_Persistency_Provenance 
@@ -89,7 +85,6 @@ art_make(
 )
 
 add_subdirectory(job)
-add_subdirectory(Spacecharge)
 
 install_headers()
 install_source()

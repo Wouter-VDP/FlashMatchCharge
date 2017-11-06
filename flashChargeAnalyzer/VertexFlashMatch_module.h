@@ -36,6 +36,8 @@
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "larsim/MCCheater/BackTracker.h"
 
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
+
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -45,8 +47,6 @@
 #include "uboone/LLSelectionTool/OpT0Finder/Algorithms/PhotonLibHypothesis.h"
 #include "uboone/LLSelectionTool/OpT0Finder/Base/FlashMatchManager.h"
 #include "uboone/LLSelectionTool/OpT0Finder/Base/OpT0FinderTypes.h"
-
-#include "Spacecharge/SpaceChargeMicroBooNE.h"
 
 #include "TTree.h"
 #include "TVector3.h"
@@ -136,7 +136,6 @@ private:
   ::flashana::FlashMatchManager m_mgr;
   art::ServiceHandle<geo::Geometry> m_geo;
   TTree *m_tree;
-  SpaceChargeMicroBooNE *m_sce;
 
   /* TREE VARIABLES*/
   // Run Subrun Event
@@ -226,9 +225,6 @@ private:
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VertexFlashMatch::~VertexFlashMatch(){
-    if (m_sce){
-        delete m_sce;
-    }
 }
 
 VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
@@ -259,11 +255,6 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
               {22, m_ly_gamma*m_chE_gamma}};
 
   m_mgr.Configure(p.get<flashana::Config_t>("FlashMatchConfig"));
-
-  // Initialize sce:
-  std::string _env = std::getenv("UBOONE_DATA_DIR");
-  _env = _env + "/SpaceCharge/SCEoffsets_MicroBooNE_E273.root";
-  m_sce = new SpaceChargeMicroBooNE(_env);
 
   // initialize output tree
   art::ServiceHandle<art::TFileService> tfs;
