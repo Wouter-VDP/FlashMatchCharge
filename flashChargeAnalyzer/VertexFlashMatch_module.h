@@ -164,6 +164,8 @@ private:
   double true_sce_y;
   double true_sce_z;
   std::vector<int> simphot_spectrum; ///< Array with PMT of the simphotons
+  std::vector<int> true_daughters_pdg; ///< True PDG codes of the neutrino products
+  std::vector<double> true_daughters_E; ///< True energy of the daughters
 
   // PandoraNu information (vector like fields with a star have nr_pfp+1 size,
   // the plus one accounta for when the event is considered as a whole.)
@@ -174,8 +176,13 @@ private:
   std::vector<double> nuvtxy;     ///< y coordinate
   std::vector<double> nuvtxz;     ///< z coordinate
   std::vector<Short_t> nupfp_pdg; ///< PDG code assigned by PandoraNu
+
   std::vector<Short_t> nr_shwr;   ///< number of showers in the hierarchy
   std::vector<Short_t> nr_trck;   ///< number of tracks in the hierarchy
+
+  std::vector<Short_t> nr_daughter_shwr;   ///< number of showers in the hierarchy
+  std::vector<Short_t> nr_daughter_trck;   ///< number of tracks in the hierarchy
+
   std::vector<Short_t> classRecoTrue; ///< 0: not filled, data; 1: neutrino; 2: cosmics; 3: mixed; 4: dirt
   std::vector<double> q_Y_sps; ///< The charge on the collection plane from
                                ///spacepoints associated to pandora hierachy
@@ -218,6 +225,9 @@ private:
   double m_chE_gamma;
 
   bool m_normalized;
+  bool m_isCosmicInTime;
+  bool m_isData;
+
 
   std::map<unsigned short, double> m_ly_map;
 };
@@ -248,6 +258,8 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
   m_chE_gamma     = p.get<double>("ChargeEnergyGamma"   , 1.0/65);
 
   m_normalized     = p.get<bool> ("NormalizedHypo"     , false);
+  m_isCosmicInTime = p.get<bool>("isCosmicInTime", false);
+  m_isData         = p.get<bool>("isData", false);
 
   m_ly_map = {{2212, m_ly_proton*m_chE_proton},
               {11, m_ly_electron*m_chE_electron},
@@ -282,6 +294,9 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
   m_tree->Branch("true_sce_z", &true_sce_z, "true_sce_z/D");
   m_tree->Branch("simphot_spectrum", "std::vector<int>", &simphot_spectrum);
 
+  m_tree->Branch("true_daughters_pdg", "std::vector< int >",  &true_daughters_pdg);
+  m_tree->Branch("true_daughters_E"  , "std::vector< double >", &true_daughters_E);
+
   // Reconstructed photon information
   m_tree->Branch("nr_flash", &nr_flash, "nr_flash/s");
   m_tree->Branch("reco_spectrum", "std::vector<int>", &reco_spectrum);
@@ -305,8 +320,11 @@ VertexFlashMatch::VertexFlashMatch(fhicl::ParameterSet const &p)
   m_tree->Branch("nuvtxz", "std::vector<double>", &nuvtxz);
   m_tree->Branch("nupfp_pdg", "std::vector<Short_t>", &nupfp_pdg);
   m_tree->Branch("classRecoTrue", "std::vector<Short_t>", &classRecoTrue);
+
   m_tree->Branch("nr_shwr", "std::vector<Short_t>", &nr_shwr);
   m_tree->Branch("nr_trck", "std::vector<Short_t>", &nr_trck);
+  m_tree->Branch("nr_daughter_shwr", "std::vector<Short_t>", &nr_daughter_shwr);
+  m_tree->Branch("nr_daughter_trck", "std::vector<Short_t>", &nr_daughter_trck);
 
   m_tree->Branch("center_of_charge_x", "std::vector<double>",
                  &center_of_charge_x);
@@ -346,6 +364,8 @@ void VertexFlashMatch::resetTreeVar() {
   true_sce_x = 0;
   true_sce_y = 0;
   true_sce_z = 0;
+  true_daughters_E.clear();
+  true_daughters_pdg.clear();
 
   // PandoraNu information
   nr_pfp = 0;
@@ -368,8 +388,12 @@ void VertexFlashMatch::resetTreeVar() {
   nuvtxy.clear();
   nuvtxz.clear();
   nupfp_pdg.clear();
+
   nr_shwr.clear();
   nr_trck.clear();
+  nr_daughter_shwr.clear();
+  nr_daughter_trck.clear();
+
   classRecoTrue.clear();
   center_of_charge_x.clear();
   center_of_charge_y.clear();

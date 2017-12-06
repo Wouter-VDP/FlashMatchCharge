@@ -1,6 +1,6 @@
 <project name="nu_flashMatch">
     <!--  Project size  -->
-    <numevents>100000</numevents>
+    <numevents>627500</numevents>
 
     <!--  Operating System  -->
     <os>SL6</os>
@@ -11,23 +11,23 @@
 
     <!--  Larsoft information  -->
     <larsoft>
-        <tag>v06_26_01</tag>
+        <tag>v06_26_01_07</tag>
         <qual>e10:prof</qual>
-        <local>/pnfs/uboone/scratch/users/wvdp/submission/localProducts_larsoft_v06_26_01_e10_prof.tar</local>
+        <local>/pnfs/uboone/scratch/users/wvdp/submission/v06_26_01_08_n.tar</local>
     </larsoft>
     
     <!--  Project stages  -->
     <stage name="flashMatchNu">
         <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC82/nu</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/MCC82/nu</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC82/nu</workdir>
-        <inputdef> prodgenie_bnb_nu_cosmic_uboone_mcc8.2_reco2</inputdef>
-        <numjobs>500</numjobs>
-        <maxfilesperjob>2</maxfilesperjob>
+		<outdir>/pnfs/uboone/scratch/users/wvdp/MCC83/bnb_nu_flash/</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/work/MCC83/bnb_nu_flash/</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC83/bnb_nu_flash/</workdir>
+        <inputdef>prodgenie_bnb_nu_cosmic_uboone_mcc8.3_reco2</inputdef>
+        <numjobs>2510</numjobs>
+        <maxfilesperjob>5</maxfilesperjob>
         <datatier>flashMatched</datatier>
-        <memory>4000</memory>
-        <disk>50GB</disk>
+        <memory>4096</memory>
+        <disk>68GB</disk>
         <jobsub>--expected-lifetime=8h</jobsub>
     </stage>
 

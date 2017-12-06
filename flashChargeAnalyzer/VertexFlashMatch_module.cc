@@ -31,13 +31,13 @@ void VertexFlashMatch::fillTree(art::Event const & e)
 
     std::cout << "Run: " << run << ", SubRun: " << subrun << ", Event: " << event;
 
-    if(e.isRealData() )
+    if(e.isRealData() || m_isCosmicInTime )
     {
-        std::cout << ", This is data"<< std::endl;
+        std::cout << ", This is data or MC cosmics"<< std::endl;
     }
     else
     {
-        std::cout << ", This is MC, fill the truth tree"<< std::endl;
+        std::cout << ", This is genie MC, fill the truth tree"<< std::endl;
         fillTrueTree(e);
     }
     std::cout << std::endl;
@@ -64,9 +64,13 @@ void VertexFlashMatch::fillTree(art::Event const & e)
 void VertexFlashMatch::fillTrueTree(art::Event const & e)
 {
     auto const& truth_handle = e.getValidHandle< std::vector< simb::MCTruth > >( "generator" );
+    auto const& mcparticle_handle = e.getValidHandle< std::vector< simb::MCParticle > >( "largeant" );
+
     if (truth_handle->size() > 0)
     {
     	simb::MCParticle mcpart;
+        std::vector<simb::MCParticle> nu_mcparticles;
+
         if (truth_handle->at(0).NeutrinoSet())
         {
             //std::cout << "Neutrino interaction" << std::endl;
@@ -75,11 +79,20 @@ void VertexFlashMatch::fillTrueTree(art::Event const & e)
             true_ccnc = truth_handle->at(0).GetNeutrino().CCNC();
             true_mode = truth_handle->at(0).GetNeutrino().Mode();
 
+            for (int i = 0; i < truth_handle->at(0).NParticles(); i++) {
+                simb::MCParticle mcpart_daughter = truth_handle->at(0).GetParticle(i);
+                if (mcpart_daughter.Process() == "primary" and mcpart_daughter.T() != 0 and
+                    mcpart_daughter.StatusCode() == 1) {
+                    true_daughters_E.push_back(mcpart_daughter.E());
+                    true_daughters_pdg.push_back(mcpart_daughter.PdgCode());
+                    std::cout<< "True neutrino daughter: PDG " << mcpart_daughter.PdgCode() << std::endl;
+                }
+            }
+
         } //neutrino
         else
         {
             //std::cout << "No neutrino interaction." << std::endl;
-            auto const& mcparticle_handle = e.getValidHandle< std::vector< simb::MCParticle > >( "largeant" );
             mcpart = mcparticle_handle->at(0);
          }
 
@@ -99,6 +112,8 @@ void VertexFlashMatch::fillTrueTree(art::Event const & e)
       	true_sce_z=   true_z+ SCE->GetPosOffsets(true_x, true_y, true_z)[2];
 
     }
+
+
     auto const& simphot_handle = e.getValidHandle< std::vector< sim::SimPhotons > >("largeant");
 
     for(auto const& pmtsimvec :  *simphot_handle)
@@ -124,7 +139,7 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
     std::vector< art::Ptr<recob::PFParticle> > cosmic_pf;
     art::ServiceHandle<cheat::BackTracker> bt;
 
-    if(!e.isRealData())
+    if(!e.isRealData() && !m_isCosmicInTime )
     {
         getRecoToTrueMatches(e, matchedParticles);
 
@@ -179,26 +194,45 @@ std::vector<flashana::QCluster_t> VertexFlashMatch::fillPandoraTree(art::Event c
         std::vector<size_t> unordered_daugthers;
         traversePFParticleTree(pfpindex,unordered_daugthers,pfparticle_handle);
 
+        unsigned int numDaughters = pfparticle_handle->at(pfpindex).NumDaughters();
+        if(unordered_daugthers.size()!= numDaughters+1)
+        {
+            std::cout<< "Number of daughters is not equal to the number of the tree! " << numDaughters << "\t" << unordered_daugthers.size() << std::endl;
+        }
+
         //Fill nr_trck and nr_shwr
         Short_t nr_trck_temp=0;
         Short_t nr_shwr_temp=0;
+        Short_t nr_trck_daughters_temp=0;
+        Short_t nr_shwr_daughters_temp=0;
+
         for(auto childi : unordered_daugthers)
         {
             Short_t pdgcode = pfparticle_handle->at(childi).PdgCode();
+            size_t parent = pfparticle_handle->at(childi).Parent(); 
             if(pdgcode==13)
             {
                 nr_trck_temp++;
+                if(parent == pfpindex){
+                    nr_trck_daughters_temp++;
+                }
             }
             if(pdgcode==11)
             {
                 nr_shwr_temp++;
+                 if(parent == pfpindex){
+                    nr_shwr_daughters_temp++;
+                }
             }
         }
+        nr_daughter_trck.emplace_back(nr_trck_daughters_temp);
+        nr_daughter_shwr.emplace_back(nr_shwr_daughters_temp);
         nr_trck.emplace_back(nr_trck_temp);
         nr_shwr.emplace_back(nr_shwr_temp);
 
+
         Short_t classint = 0;
-        if(!e.isRealData())
+        if(!e.isRealData() && !m_isCosmicInTime )
         {
             classint = classify(e,neutrino_pf,cosmic_pf,unordered_daugthers);
             classRecoTrue.emplace_back(classint);
@@ -310,6 +344,7 @@ void VertexFlashMatch::fillMatchTree(std::vector<flashana::FlashMatch_t> const &
 
 std::vector<double> VertexFlashMatch::calculateChargeCenter (art::Event const & e, std::vector<size_t> const & pfplist)
 {
+
 	std::vector<double> center(3,0);
 	double min_x_sps_temp = 9999; //random big value that will be overwritten
 
@@ -342,11 +377,11 @@ std::vector<double> VertexFlashMatch::calculateChargeCenter (art::Event const & 
             }
 
             std::vector<art::Ptr<recob::Hit> > hits = hits_per_spcpnts.at(_sps.key());
-            // Add the hits to the weighted average, if they are collection hits:
+
             for (auto & hit : hits)
             {
                 if (hit->View() == geo::kZ)
-                {
+                {                    
                     // Collection hits only
                     float weight = hit->Integral();
                     center[0] += (xyz[0]) * weight;
@@ -360,7 +395,7 @@ std::vector<double> VertexFlashMatch::calculateChargeCenter (art::Event const & 
         } // spacepoints
 
     } // pfparticles
-
+    //std::cout<< "Total hit integral of this hierarchy: " << totalweight << std::endl;
 
     // Normalize;
     center[0] /= totalweight;
@@ -373,7 +408,7 @@ std::vector<double> VertexFlashMatch::calculateChargeCenter (art::Event const & 
     center_of_charge_x.emplace_back(center[0]);
     center_of_charge_y.emplace_back(center[1]);
     center_of_charge_z.emplace_back(center[2]);
-
+    //std::cout<< "Center of charge: (" << center[0] << ", " << center[1] << ", " << center[2] << ")" << std::endl;
 	return center;
 }
 
@@ -412,7 +447,7 @@ void VertexFlashMatch::getRecoToTrueMatches(art::Event const &e, lar_pandora::MC
     lar_pandora::MCParticlesToHits    trueParticlesToHits;
     lar_pandora::HitsToMCParticles    trueHitsToParticles;
 
-    if (!e.isRealData()) {
+    if(!e.isRealData() && !m_isCosmicInTime ) {
       lar_pandora::LArPandoraHelper::CollectMCParticles(e, _geantModuleLabel, trueParticleVector);
       lar_pandora::LArPandoraHelper::CollectMCParticles(e, _geantModuleLabel, truthToParticles, particlesToTruth);
       lar_pandora::LArPandoraHelper::BuildMCParticleHitMaps(e, _geantModuleLabel, hitVector, trueParticlesToHits, trueHitsToParticles, lar_pandora::LArPandoraHelper::kAddDaughters);

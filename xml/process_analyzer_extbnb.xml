@@ -1,6 +1,6 @@
 <project name="extbnb_flashMatch">
     <!--  Project size  -->
-    <numevents>100000</numevents>
+    <numevents>379958</numevents>
 
     <!--  Operating System  -->
     <os>SL6</os>
@@ -11,23 +11,23 @@
 
     <!--  Larsoft information  -->
     <larsoft>
-        <tag>v06_26_01</tag>
+        <tag>v06_26_01_07</tag>
         <qual>e10:prof</qual>
-        <local>/pnfs/uboone/scratch/users/wvdp/submission/v06_26_01_extbnb.tar</local>
+        <local>/pnfs/uboone/scratch/users/wvdp/submission/v06_26_01_08.tar</local>
     </larsoft>
     
     <!--  Project stages  -->
     <stage name="flashMatchExtbnb">
         <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC82/extbnb</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/MCC82/extbnb</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC82/extbnb</workdir>
-        <inputdef>prod_reco2_extbnb_v8_mcc8 </inputdef>
-        <numjobs>1000</numjobs>
-        <maxfilesperjob>2</maxfilesperjob>
+        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC83/extbnb_data_flash/</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/work/MCC83/extbnb_data_flash/</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC83/extbnb_data_flash/</workdir>
+        <inputdef>prod_reco2_extbnb_v9_mcc8 </inputdef>
+        <numjobs>1900</numjobs>
+        <maxfilesperjob>5</maxfilesperjob>
         <datatier>flashMatched</datatier>
-        <memory>2000</memory>
-        <disk>50GB</disk>
+        <memory>4000</memory>
+        <disk>68GB</disk>
         <jobsub>--expected-lifetime=8h</jobsub>
     </stage>
 

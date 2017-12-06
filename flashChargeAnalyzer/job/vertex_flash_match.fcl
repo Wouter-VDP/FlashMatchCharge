@@ -14,10 +14,14 @@ vertex_flash_match:
 
 # Re-use flash
 vertex_flash_match.FlashMatchConfig.FlashMatchManager.AllowReuseFlash: true
-vertex_flash_match.FlashMatchConfig.FlashMatchManager.Verbosity: 3
-# Add Charge algorithm
-vertex_flash_match.FlashMatchConfig.FlashMatchManager.CustomAlgo:      ["LightPath","LightCharge"]
-# Normalise as long as we dont know the exact conversion 
-vertex_flash_match.FlashMatchConfig.QLLMatch.NormalizeHypothesis: false
+vertex_flash_match.FlashMatchConfig.FlashMatchManager.CustomAlgo:         ["LightCharge"]
+vertex_flash_match.FlashMatchConfig.QLLMatch.NormalizeHypothesis:         true
+
+#vertex_flash_match.FlashMatchConfig.QLLMatch.XPenaltyThreshold:           0
+#vertex_flash_match.FlashMatchConfig.QLLMatch.ZPenaltyThreshold:           0
+vertex_flash_match.FlashMatchConfig.QLLMatch.OnePMTScoreThreshold:         0
+vertex_flash_match.FlashMatchConfig.QLLMatch.OnePMTXDiffThreshold:         0.
+vertex_flash_match.FlashMatchConfig.QLLMatch.OnePMTPESumThreshold:         0
+vertex_flash_match.FlashMatchConfig.QLLMatch.OnePMTPEFracThreshold:        0.
 
 END_PROLOG

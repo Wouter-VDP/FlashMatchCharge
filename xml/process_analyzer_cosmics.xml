@@ -1,6 +1,6 @@
-<project name="nue_flashMatch">
+<project name="intime_flashMatch">
     <!--  Project size  -->
-    <numevents>288200</numevents>
+    <numevents>960000</numevents>
 
     <!--  Operating System  -->
     <os>SL6</os>
@@ -11,23 +11,22 @@
 
     <!--  Larsoft information  -->
     <larsoft>
-        <tag>v06_26_01</tag>
+        <tag>v06_26_01_07</tag>
         <qual>e10:prof</qual>
-        <local>/pnfs/uboone/scratch/users/wvdp/submission/localProducts_larsoft_v06_26_01_e10_prof.tar</local>
+        <local>/pnfs/uboone/scratch/users/wvdp/submission/v06_26_01_08.tar</local>
     </larsoft>
     
     <!--  Project stages  -->
     <stage name="flashMatchCosmics">
-        <fcl>run_vertex_flash_match.fcl</fcl>
-        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC82/cosmics</outdir>
-        <logdir>/pnfs/uboone/scratch/users/wvdp/MCC82/cosmics</logdir>
-        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC82/cosmics</workdir>
-        <inputdef>prodcosmics_corsika_cmc_uboone_mcc8.2_reco2</inputdef>
-        <numjobs>2000</numjobs>
-        <maxfilesperjob>6</maxfilesperjob>
+        <fcl>run_vertex_flash_match_intime.fcl</fcl>
+        <outdir>/pnfs/uboone/scratch/users/wvdp/MCC83/cosmic_intime_flash</outdir>
+        <logdir>/pnfs/uboone/scratch/users/wvdp/work/MCC83/cosmic_intime_flash</logdir>
+        <workdir>/pnfs/uboone/scratch/users/wvdp/work/MCC83/cosmic_intime_flash</workdir>
+        <inputdef>prodcosmics_corsika_cmc_uboone_intime_mcc8.3_reco2</inputdef>
+        <numjobs>3840</numjobs>
+        <maxfilesperjob>5</maxfilesperjob>
         <datatier>flashMatched</datatier>
-        <memory>6000</memory>
-        <disk>68GB</disk>
+        <memory>4000</memory>
         <jobsub>--expected-lifetime=8h</jobsub>
     </stage>
 
